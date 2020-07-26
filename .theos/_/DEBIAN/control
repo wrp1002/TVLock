@@ -1,0 +1,10 @@
+Package: com.wrp1002.tvlock
+Name: TVLock
+Architecture: iphoneos-arm
+Description: An awesome MobileSubstrate tweak!
+Maintainer: Wes
+Author: Wes
+Section: Tweaks
+Depends: mobilesubstrate (>= 0.9.5000)
+Version: 0.0.1-9+debug
+Installed-Size: 160

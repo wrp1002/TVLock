@@ -9,7 +9,7 @@ TARGET := iphone:clang:latest:7.0
 INSTALL_TARGET_PROCESSES = SpringBoard
 
 ARCHS = arm64 arm64e
-#SDKVERSION = 13.3
+SDKVERSION = 13.3
 #SYSROOT = $(THEOS)/sdks/iPhoneOS13.3.sdk
 
 
@@ -22,5 +22,5 @@ $(TWEAK_NAME)_CFLAGS = -fobjc-arc
 $(TWEAK_NAME)_EXTRA_FRAMEWORKS += Cephei
 
 include $(THEOS_MAKE_PATH)/tweak.mk
-#SUBPROJECTS += TrueDatePrefs
+SUBPROJECTS += tvlockprefs
 include $(THEOS_MAKE_PATH)/aggregate.mk

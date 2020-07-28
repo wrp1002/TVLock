@@ -3,33 +3,68 @@ bool enabled = true;
 
 bool springboardReady = false;
 
-float speed = 0.5f;
+float speed = 0.3f;
+
+//speed = 1.5;
 
 
+//	=========================== Debugging stuff ===========================
+
+NSString *LogTweakName = @"TVLock";
+
+
+UIWindow* GetKeyWindow() {
+    UIWindow        *foundWindow = nil;
+    NSArray         *windows = [[UIApplication sharedApplication]windows];
+    for (UIWindow   *window in windows) {
+        if (window.isKeyWindow) {
+            foundWindow = window;
+            break;
+        }
+    }
+    return foundWindow;
+}
 
 //	Shows an alert box. Used for debugging 
 void ShowAlert(NSString *msg, NSString *title) {
-	UIAlertView *alert = [[UIAlertView alloc] initWithTitle:title
-	message:msg
-	delegate:nil
-	cancelButtonTitle:@"Cool!"
-	otherButtonTitles:nil];
-	[alert show];
+	UIAlertController * alert = [UIAlertController
+                                 alertControllerWithTitle:title
+                                 message:msg
+                                 preferredStyle:UIAlertControllerStyleAlert];
+
+    //Add Buttons
+    UIAlertAction* dismissButton = [UIAlertAction
+                                actionWithTitle:@"Cool!"
+                                style:UIAlertActionStyleDefault
+                                handler:^(UIAlertAction * action) {
+                                    //Handle dismiss button action here
+									
+                                }];
+
+    //Add your buttons to alert controller
+    [alert addAction:dismissButton];
+
+    [GetKeyWindow().rootViewController presentViewController:alert animated:YES completion:nil];
 }
 
+//	Show log with tweak name as prefix for easy grep
 void Log(NSString *msg) {
-	NSLog(@"TVLock: %@", msg);
+	NSLog(@"%@: %@", LogTweakName, msg);
 }
 
+//	Log exception info
 void LogException(NSException *e) {
-	NSLog(@"TVLock NSException caught");
-	NSLog(@"Name: %@", e.name);
-	NSLog(@"Name: %@", e.reason);
-	ShowAlert(@"TVLock Crash Avoided!", @"Alert");
+	NSLog(@"%@: NSException caught", LogTweakName);
+	NSLog(@"%@: Name:%@", LogTweakName, e.name);
+	NSLog(@"%@: Reason:%@", LogTweakName, e.reason);
+	//ShowAlert(@"TVLock Crash Avoided!", @"Alert");
 }
 
 
 
+//	=========================== Classes stuff ===========================
+
+extern UIImage* _UICreateScreenUIImage();
 
 
 @interface SBBacklightController : NSObject
@@ -45,51 +80,43 @@ void LogException(NSException *e) {
 
 
 @interface TVLock:NSObject {
-	UIWindow* springboardWindow;
+	UIWindow *springboardWindow;
 	UIView *mainView;
 	UIImageView *imageView;
 	UIView *whiteOverlay;
 }
-	+ (id)sharedInstance;
 	-(id)init;
+	//-(UIImage*)screenshot;
 	-(void)showLockAnimation:(float)arg1;
 	-(void)reset;
 @end
 
 
+
+
+static TVLock *__strong tvLock;
+
+
+
 @implementation TVLock
-	static id __strong _sharedObject;
-
-	+(id)sharedInstance {
-		Log(@"sharedInstance()");
-
-		if (!_sharedObject) {
-			Log(@"sharedInstance() Creating new!");
-			_sharedObject = [[self alloc] init];
-		}
-		return _sharedObject;
-	}
-
 	-(id)init {
 		Log(@"init()");
 		self = [super init];
 
 		if(self != nil) {
 			@try {
-				springboardWindow = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-				springboardWindow.windowLevel = UIWindowLevelStatusBar + 10000;
+				springboardWindow = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+				springboardWindow.windowLevel = UIWindowLevelAlert + 2;
 				[springboardWindow setHidden:YES];
 				[springboardWindow _setSecure:YES];
-				springboardWindow.alpha = 1;
 				[springboardWindow setUserInteractionEnabled:NO];
-				//springboardWindow.layer.cornerRadius = 1.0f;
-				//springboardWindow.layer.masksToBounds = YES;
-				//springboardWindow.layer.shouldRasterize  = NO;
+				[springboardWindow setAlpha:1.0];
 				springboardWindow.backgroundColor = [UIColor blackColor];
+				//[springboardWindow makeKeyAndVisible];
 				
 				mainView = [[UIView alloc] initWithFrame:springboardWindow.bounds];
+				[mainView setAlpha:1.0f];
 				mainView.backgroundColor = [UIColor blackColor];
-				mainView.alpha = 1.0f;
 				mainView.layer.masksToBounds = YES;
 				[springboardWindow addSubview:mainView];
 
@@ -114,49 +141,64 @@ void LogException(NSException *e) {
 
 	-(void)showLockAnimation:(float)speed {
 		Log(@"showLockAnimation()");
-		[self reset];
 		
 		@try {
+			[self reset];
+			
 			//	Prepare for first animation
 			CGRect newFrameImage = CGRectMake(imageView.frame.origin.x,-imageView.center.y,imageView.frame.size.width,imageView.frame.size.height);
 			CGRect newFrameBack = CGRectMake(0,imageView.center.y,imageView.frame.size.width,5);
 			CGAffineTransform newTransformImage = CGAffineTransformScale(imageView.transform, 1, 0.5);
-
-			// Get screenshot
-			extern UIImage *_UICreateScreenUIImage();
-			imageView.image = _UICreateScreenUIImage();
-
-			//	Show animation window
-			springboardWindow.hidden = NO;
 			
-			[UIView animateWithDuration:speed*0.3 animations:^{
+			
+			//	This is stupid and took too long to figure out. _UICreateScreenUIImage returns 
+			//	a UIImage but doesn't give ownership to ARC, so it is done manually.
+			CFTypeRef ref = (__bridge CFTypeRef)_UICreateScreenUIImage();
+			UIImage *img = (__bridge_transfer UIImage*)ref;
+			imageView.image = img;
+			
+			//	Show animation window
+			[springboardWindow setHidden:NO];
 
-				//	First part of animation
-				imageView.frame = newFrameImage;
-				imageView.transform = newTransformImage;
+			//	Setup second animation
+			void (^anim2)(void) = ^{
+				[UIView animateWithDuration:speed*0.5 
+						delay:0.00f
+						options:UIViewAnimationOptionCurveLinear
+						animations:^{
+							//	Second part of animation
+							mainView.frame = CGRectMake(imageView.bounds.size.width / 2, imageView.bounds.size.height / 2, 1, 1);
+						} 
+						completion:^(BOOL finished) {
+							[self reset];
+						}
+				];
+			};
 
-				mainView.frame = newFrameBack;
+			//	Setup first animation
+			void (^anim1)(void) = ^{
+				[UIView animateWithDuration:speed*0.5 
+					delay:0.0f
+                    options:UIViewAnimationOptionCurveLinear
+					animations:^{
 
-				whiteOverlay.alpha = 1.0f;
-				
+						//	First part of animation
+						imageView.frame = newFrameImage;
+						imageView.transform = newTransformImage;
 
-			} completion:^(BOOL finished) {
-				dispatch_after(dispatch_time(DISPATCH_TIME_NOW, speed*0.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-					[UIView animateWithDuration:speed*0.3 animations:^{
+						mainView.frame = newFrameBack;
 
-						//	Second part of animation
-						mainView.frame = CGRectMake(imageView.bounds.size.width / 2, imageView.bounds.size.height / 2, 1, 1);
+						whiteOverlay.alpha = 1.0f;
 
 					} completion:^(BOOL finished) {
-						dispatch_after(dispatch_time(DISPATCH_TIME_NOW, speed*0.3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+						anim2();
+					}
+				];
+			};
+			
+			//	Play first animation, which will also play the second one
+			anim1();
 
-							[self reset];
-							
-						});
-					}];
-
-				});
-			}];
 		}
 		@catch (NSException *e) {
 			LogException(e);
@@ -171,19 +213,22 @@ void LogException(NSException *e) {
 		mainView.frame = springboardWindow.bounds;
 		mainView.transform = CGAffineTransformIdentity;
 
-		imageView.alpha = 1.0f;
 		imageView.frame = springboardWindow.bounds;
 		imageView.transform = CGAffineTransformIdentity;
 		imageView.image = nil;
 
 		whiteOverlay.alpha = 0.0f;
 		whiteOverlay.frame = springboardWindow.bounds;
-		mainView.transform = CGAffineTransformIdentity;
+		whiteOverlay.transform = CGAffineTransformIdentity;
 
-		springboardWindow.hidden = YES;
+		[springboardWindow setHidden:YES];
 	}
 
 @end
+
+
+
+//	=========================== Hooks ===========================
 
 %hook SpringBoard
 
@@ -193,7 +238,8 @@ void LogException(NSException *e) {
 
 		Log(@"============== TVLock started ==============");
 
-		[TVLock sharedInstance];
+		//[TVLock sharedInstance];
+		tvLock = [[TVLock alloc] init];
 		ShowAlert(@"TVLock started", @"Title");
 
 		springboardReady = true;
@@ -206,19 +252,19 @@ void LogException(NSException *e) {
 %hook SBBacklightController
 	-(void)_animateBacklightToFactor:(float)arg1 duration:(double)arg2 source:(long long)arg3 silently:(BOOL)arg4 completion:(id)arg5 {
 		if(enabled && (arg1==0 && [self screenIsOn]) ) {
-			Log(@"_animateBacklightToFactor()");
+			Log([NSString stringWithFormat:@"_animateBacklightToFactor()  Backlight:%f Duration:%f Source:%llx Silently:%i", arg1, arg2, arg3, arg4]);
 			arg2 = speed;
-			//Log(@"** -(void)_animateBacklightToFactor source:%@ duration:%@ Factor:%@ silently:%@", @(arg3), @(arg2), @(arg1), @(arg4));
-			
-			//ShowAlert(@"lock time");
-			if([TVLock sharedInstance]) {
-				[[TVLock sharedInstance] showLockAnimation:arg2];
-			}
+
+
+			//for (int i = 0; i < 20; i++)	// For stress testing memory leak (all fixed now)
+			[tvLock showLockAnimation:arg2];
 		}
 
 		%orig(arg1, arg2, arg3, arg4, arg5);
 	}
 %end
+
+
 
 
 %ctor {

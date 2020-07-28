@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>Options</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSSwitchCell</string>
+		<key>label</key>
+		<string>Enabled</string>
+		<key>key</key>
+		<string>kEnabled</string>
+		<key>default</key>
+		<true/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSSwitchCell</string>
+		<key>label</key>
+		<string>Disable in LPM</string>
+		<key>key</key>
+		<string>kLPM</string>
+		<key>default</key>
+		<false/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>Squish animation time</string>
+		<key>footerText</key>
+		<string>How long should the first animation take?</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSSliderCell</string>
+		<key>key</key>
+		<string>kAnim1</string>
+		<key>max</key>
+		<integer>1</integer>
+		<key>showValue</key>
+		<true/>
+		<key>isSegmented</key>
+		<false/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>Pause time</string>
+		<key>footerText</key>
+		<string>How long should the pause be between the previous and next animation?</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSSliderCell</string>
+		<key>key</key>
+		<string>kPause1</string>
+		<key>max</key>
+		<integer>1</integer>
+		<key>showValue</key>
+		<true/>
+		<key>isSegmented</key>
+		<false/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>Closing animation</string>
+		<key>footerText</key>
+		<string>How long should the last animation take?</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSSliderCell</string>
+		<key>key</key>
+		<string>kAnim2</string>
+		<key>max</key>
+		<integer>1</integer>
+		<key>showValue</key>
+		<true/>
+		<key>isSegmented</key>
+		<false/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>Final pause time</string>
+		<key>footerText</key>
+		<string>How long should the last pause be before locking?</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSSliderCell</string>
+		<key>key</key>
+		<string>kPause2</string>
+		<key>max</key>
+		<integer>1</integer>
+		<key>showValue</key>
+		<true/>
+		<key>isSegmented</key>
+		<false/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>Developer</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSButtonCell</string>
+		<key>label</key>
+		<string>GitHub Page</string>
+		<key>action</key>
+		<string>OpenGitHub</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSButtonCell</string>
+		<key>label</key>
+		<string>Donate</string>
+		<key>action</key>
+		<string>OpenPaypal</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSButtonCell</string>
+		<key>label</key>
+		<string>Respring</string>
+		<key>action</key>
+		<string>Respring</string>
+		<key>isDestructive</key>
+		<false/>
+		<key>confirmation</key>
+		<dict>
+			<key>prompt</key>
+			<string>Are you sure you want to respring?</string>
+			<key>title</key>
+			<string>Yes</string>
+			<key>cancelTitle</key>
+			<string>Cancel</string>
+		</dict>
+
+	</dict>
+
+
+	</array>
+
+	<key>title</key>
+	<string>TVLock</string>
+</dict>
+</plist>

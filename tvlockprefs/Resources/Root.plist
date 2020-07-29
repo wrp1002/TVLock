@@ -9,8 +9,9 @@
 		<string>PSGroupCell</string>
 		<key>label</key>
 		<string>Options</string>
+		<key>footerText</key>
+		<string>Make animations ease in and out.</string>
 	</dict>
-
 	<dict>
 		<key>cell</key>
 		<string>PSSwitchCell</string>
@@ -25,7 +26,6 @@
 		<key>PostNotification</key>
 		<string>com.wrp1002.tvlock/ReloadPrefs</string>
 	</dict>
-
 	<dict>
 		<key>cell</key>
 		<string>PSSwitchCell</string>
@@ -40,23 +40,108 @@
 		<key>PostNotification</key>
 		<string>com.wrp1002.tvlock/ReloadPrefs</string>
 	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSSwitchCell</string>
+		<key>label</key>
+		<string>Glow Effect</string>
+		<key>key</key>
+		<string>kGlow</string>
+		<key>default</key>
+		<false/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSSwitchCell</string>
+		<key>label</key>
+		<string>Use smooth animation</string>
+		<key>key</key>
+		<string>kSmooth</string>
+		<key>default</key>
+		<false/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>Line Thiccness</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSSliderCell</string>
+		<key>key</key>
+		<string>kLine</string>
+		<key>min</key>
+		<integer>1</integer>
+		<key>max</key>
+		<integer>10</integer>
+		<key>default</key>
+		<integer>4</integer>
+		<key>showValue</key>
+		<true/>
+		<key>isSegmented</key>
+		<true/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+		<key>label</key>
+		<string>Dot Size</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSSliderCell</string>
+		<key>key</key>
+		<string>kDot</string>
+		<key>min</key>
+		<integer>1</integer>
+		<key>max</key>
+		<integer>10</integer>
+		<key>default</key>
+		<integer>3</integer>
+		<key>showValue</key>
+		<true/>
+		<key>isSegmented</key>
+		<true/>
+		<key>defaults</key>
+		<string>com.wrp1002.tvlock</string>
+		<key>PostNotification</key>
+		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
 
 	<dict>
 		<key>cell</key>
 		<string>PSGroupCell</string>
 		<key>label</key>
 		<string>Squish animation time</string>
-		<key>footerText</key>
-		<string>How long should the first animation take?</string>
 	</dict>
-
 	<dict>
 		<key>cell</key>
 		<string>PSSliderCell</string>
+		<key>label</key>
+        <string>Modifier</string>
 		<key>key</key>
 		<string>kAnim1</string>
+		<key>min</key>
+		<real>0</real>
 		<key>max</key>
-		<integer>1</integer>
+		<real>0.5</real>
+		<key>default</key>
+		<real>0.15</real>
 		<key>showValue</key>
 		<true/>
 		<key>isSegmented</key>
@@ -72,17 +157,18 @@
 		<string>PSGroupCell</string>
 		<key>label</key>
 		<string>Pause time</string>
-		<key>footerText</key>
-		<string>How long should the pause be between the previous and next animation?</string>
 	</dict>
-
 	<dict>
 		<key>cell</key>
 		<string>PSSliderCell</string>
 		<key>key</key>
 		<string>kPause1</string>
+		<key>min</key>
+		<real>0</real>
 		<key>max</key>
-		<integer>1</integer>
+		<real>0.5</real>
+		<key>default</key>
+		<real>0.05</real>
 		<key>showValue</key>
 		<true/>
 		<key>isSegmented</key>
@@ -98,17 +184,18 @@
 		<string>PSGroupCell</string>
 		<key>label</key>
 		<string>Closing animation</string>
-		<key>footerText</key>
-		<string>How long should the last animation take?</string>
 	</dict>
-
 	<dict>
 		<key>cell</key>
 		<string>PSSliderCell</string>
 		<key>key</key>
 		<string>kAnim2</string>
+		<key>min</key>
+		<real>0</real>
 		<key>max</key>
-		<integer>1</integer>
+		<real>0.5</real>
+		<key>default</key>
+		<real>0.15</real>
 		<key>showValue</key>
 		<true/>
 		<key>isSegmented</key>
@@ -123,18 +210,19 @@
 		<key>cell</key>
 		<string>PSGroupCell</string>
 		<key>label</key>
-		<string>Final pause time</string>
-		<key>footerText</key>
-		<string>How long should the last pause be before locking?</string>
+		<string>Dot Fade Time</string>
 	</dict>
-
 	<dict>
 		<key>cell</key>
 		<string>PSSliderCell</string>
 		<key>key</key>
-		<string>kPause2</string>
+		<string>kAnim3</string>
+		<key>min</key>
+		<real>0</real>
 		<key>max</key>
-		<integer>1</integer>
+		<real>0.5</real>
+		<key>default</key>
+		<real>0.4</real>
 		<key>showValue</key>
 		<true/>
 		<key>isSegmented</key>
@@ -143,6 +231,30 @@
 		<string>com.wrp1002.tvlock</string>
 		<key>PostNotification</key>
 		<string>com.wrp1002.tvlock/ReloadPrefs</string>
+	</dict>
+
+	<dict>
+		<key>cell</key>
+		<string>PSGroupCell</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Reset all settings</string>
+			<key>action</key>
+			<string>Reset</string>
+			<key>isDestructive</key>
+			<true/>
+			<key>confirmation</key>
+			<dict>
+				<key>prompt</key>
+				<string>Are you sure? This will respring your device.</string>
+				<key>title</key>
+				<string>Reset!</string>
+				<key>cancelTitle</key>
+				<string>Cancel</string>
+			</dict>
 	</dict>
 
 	<dict>
@@ -151,16 +263,36 @@
 		<key>label</key>
 		<string>Developer</string>
 	</dict>
-
 	<dict>
 		<key>cell</key>
 		<string>PSButtonCell</string>
 		<key>label</key>
-		<string>GitHub Page</string>
+		<string>Email Me</string>
 		<key>action</key>
-		<string>OpenGitHub</string>
+		<string>OpenEmail</string>
+		<key>icon</key>
+        <string>email.png</string>
 	</dict>
-
+	<dict>
+		<key>cell</key>
+		<string>PSButtonCell</string>
+		<key>label</key>
+		<string>Reddit</string>
+		<key>action</key>
+		<string>OpenReddit</string>
+		<key>icon</key>
+        <string>reddit.png</string>
+	</dict>
+	<dict>
+		<key>cell</key>
+		<string>PSButtonCell</string>
+		<key>label</key>
+		<string>Source Code</string>
+		<key>action</key>
+		<string>OpenGithub</string>
+		<key>icon</key>
+        <string>github.png</string>
+	</dict>
 	<dict>
 		<key>cell</key>
 		<string>PSButtonCell</string>
@@ -168,29 +300,9 @@
 		<string>Donate</string>
 		<key>action</key>
 		<string>OpenPaypal</string>
+		<key>icon</key>
+        <string>paypal.png</string>
 	</dict>
-
-	<dict>
-		<key>cell</key>
-		<string>PSButtonCell</string>
-		<key>label</key>
-		<string>Respring</string>
-		<key>action</key>
-		<string>Respring</string>
-		<key>isDestructive</key>
-		<false/>
-		<key>confirmation</key>
-		<dict>
-			<key>prompt</key>
-			<string>Are you sure you want to respring?</string>
-			<key>title</key>
-			<string>Yes</string>
-			<key>cancelTitle</key>
-			<string>Cancel</string>
-		</dict>
-
-	</dict>
-
 
 	</array>
 

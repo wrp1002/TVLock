@@ -1,18 +1,34 @@
 #line 1 "Tweak.x"
+#import <Cephei/HBPreferences.h>
+
+#define kIdentifier @"com.wrp1002.tvlock"
+#define kSettingsChangedNotification (CFStringRef)@"com.wrp1002.tvlock/ReloadPrefs"
+#define kSettingsPath @"/var/mobile/Library/Preferences/com.wrp1002.tvlock.plist"
+
+
+
+
 
 bool enabled = true;
+bool disableInLPM = false;
+bool glowEffect = false;
+bool smoothAnim = false;
 
+int lineThickness = 4;
+int dotSize = 3;
+
+float animTime1 = 0.15;
+float pauseTime1 = 0.05;
+float animTime2 = 0.15;
+float animTime3 = 0.40;
+float totalTime = 1.0;
+
+
+
+
+
+NSString *LogTweakName = @"TVLock13";
 bool springboardReady = false;
-
-float speed = 0.3f;
-
-
-
-
-
-
-NSString *LogTweakName = @"TVLock";
-
 
 UIWindow* GetKeyWindow() {
     UIWindow        *foundWindow = nil;
@@ -83,6 +99,7 @@ extern UIImage* _UICreateScreenUIImage();
 @interface TVLock:NSObject {
 	UIWindow *springboardWindow;
 	UIView *mainView;
+	UIView *subView;
 	UIImageView *imageView;
 	UIView *whiteOverlay;
 }
@@ -117,20 +134,29 @@ static TVLock *__strong tvLock;
 				
 				mainView = [[UIView alloc] initWithFrame:springboardWindow.bounds];
 				[mainView setAlpha:1.0f];
-				mainView.backgroundColor = [UIColor blackColor];
-				mainView.layer.masksToBounds = YES;
+				mainView.backgroundColor = [UIColor clearColor];
+				mainView.layer.shadowColor = [UIColor whiteColor].CGColor;
+				mainView.layer.shadowOffset = CGSizeZero;
+				mainView.layer.shadowOpacity = 200.0f;
+				mainView.layer.shadowRadius = 200.0f;
+				mainView.layer.shouldRasterize = true;
 				[springboardWindow addSubview:mainView];
+
+				subView = [[UIView alloc] initWithFrame:springboardWindow.bounds];
+				[subView setAlpha:1.0f];
+				subView.backgroundColor = [UIColor blackColor];
+				subView.layer.masksToBounds = YES;
+				[mainView addSubview:subView];
 
 				imageView = [[UIImageView alloc] initWithFrame:springboardWindow.bounds];
 				imageView.frame = springboardWindow.bounds;
 				imageView.contentMode = UIViewContentModeScaleAspectFill;
-				[mainView addSubview:imageView];
+				[subView addSubview:imageView];
 
 				whiteOverlay = [[UIView alloc] initWithFrame:springboardWindow.bounds];
 				whiteOverlay.frame = springboardWindow.bounds;
 				whiteOverlay.backgroundColor = [UIColor whiteColor];
 				whiteOverlay.alpha = 0.0f;
-				whiteOverlay.layer.masksToBounds = YES;
 				[imageView addSubview:whiteOverlay];
 				
 			} @catch (NSException *e) {
@@ -140,17 +166,11 @@ static TVLock *__strong tvLock;
 		return self;
 	}
 
-	-(void)showLockAnimation:(float)speed {
+	-(void)showLockAnimation:(float)totalTime {
 		Log(@"showLockAnimation()");
 		
 		@try {
 			[self reset];
-			
-			
-			CGRect newFrameImage = CGRectMake(imageView.frame.origin.x,-imageView.center.y,imageView.frame.size.width,imageView.frame.size.height);
-			CGRect newFrameBack = CGRectMake(0,imageView.center.y,imageView.frame.size.width,5);
-			CGAffineTransform newTransformImage = CGAffineTransformScale(imageView.transform, 1, 0.5);
-			
 			
 			
 			
@@ -158,17 +178,26 @@ static TVLock *__strong tvLock;
 			UIImage *img = (__bridge_transfer UIImage*)ref;
 			imageView.image = img;
 			
+			if (glowEffect) {
+				mainView.layer.shadowOpacity = 200.0f;
+				mainView.layer.shadowRadius = 200.0f;
+			}
+			else {
+				mainView.layer.shadowOpacity = 0.0f;
+				mainView.layer.shadowRadius = 0.0f;
+			}
+
 			
 			[springboardWindow setHidden:NO];
 
 			
-			void (^anim2)(void) = ^{
-				[UIView animateWithDuration:speed*0.5 
-						delay:0.00f
-						options:UIViewAnimationOptionCurveLinear
+			void (^anim3)(void) = ^{
+				[UIView animateWithDuration:animTime3
+						delay:0.0f
+						options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
 						animations:^{
 							
-							mainView.frame = CGRectMake(imageView.bounds.size.width / 2, imageView.bounds.size.height / 2, 1, 1);
+							whiteOverlay.backgroundColor = [UIColor blackColor];
 						} 
 						completion:^(BOOL finished) {
 							[self reset];
@@ -177,18 +206,35 @@ static TVLock *__strong tvLock;
 			};
 
 			
+			void (^anim2)(void) = ^{
+				[UIView animateWithDuration:animTime2
+						delay:pauseTime1
+						options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
+						animations:^{
+							
+							
+							mainView.transform = CGAffineTransformScale(imageView.transform, dotSize / (float)mainView.bounds.size.width, dotSize / (float)mainView.bounds.size.height);
+							subView.layer.cornerRadius = 300;
+						} 
+						completion:^(BOOL finished) {
+							anim3();
+						}
+				];
+			};
+
+			
 			void (^anim1)(void) = ^{
-				[UIView animateWithDuration:speed*0.5 
+				[UIView animateWithDuration:animTime1
 					delay:0.0f
-                    options:UIViewAnimationOptionCurveLinear
+                    options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
 					animations:^{
 
 						
-						imageView.frame = newFrameImage;
-						imageView.transform = newTransformImage;
+						
+						
 
-						mainView.frame = newFrameBack;
-
+						
+						mainView.transform = CGAffineTransformScale(imageView.transform, 1, lineThickness / (float)mainView.bounds.size.height);
 						whiteOverlay.alpha = 1.0f;
 
 					} completion:^(BOOL finished) {
@@ -214,11 +260,14 @@ static TVLock *__strong tvLock;
 		mainView.frame = springboardWindow.bounds;
 		mainView.transform = CGAffineTransformIdentity;
 
+		subView.layer.cornerRadius = 0;
+
 		imageView.frame = springboardWindow.bounds;
 		imageView.transform = CGAffineTransformIdentity;
 		imageView.image = nil;
 
 		whiteOverlay.alpha = 0.0f;
+		whiteOverlay.backgroundColor = [UIColor whiteColor];
 		whiteOverlay.frame = springboardWindow.bounds;
 		whiteOverlay.transform = CGAffineTransformIdentity;
 
@@ -252,10 +301,10 @@ static TVLock *__strong tvLock;
 #define _LOGOS_RETURN_RETAINED
 #endif
 
-@class SpringBoard; @class SBBacklightController; 
+@class SBBacklightController; @class SpringBoard; 
 static void (*_logos_orig$_ungrouped$SpringBoard$applicationDidFinishLaunching$)(_LOGOS_SELF_TYPE_NORMAL SpringBoard* _LOGOS_SELF_CONST, SEL, id); static void _logos_method$_ungrouped$SpringBoard$applicationDidFinishLaunching$(_LOGOS_SELF_TYPE_NORMAL SpringBoard* _LOGOS_SELF_CONST, SEL, id); static void (*_logos_orig$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$)(_LOGOS_SELF_TYPE_NORMAL SBBacklightController* _LOGOS_SELF_CONST, SEL, float, double, long long, BOOL, id); static void _logos_method$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$(_LOGOS_SELF_TYPE_NORMAL SBBacklightController* _LOGOS_SELF_CONST, SEL, float, double, long long, BOOL, id); 
 
-#line 233 "Tweak.x"
+#line 282 "Tweak.x"
 
 
 	
@@ -277,9 +326,12 @@ static void (*_logos_orig$_ungrouped$SpringBoard$applicationDidFinishLaunching$)
 
 
 	static void _logos_method$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$(_LOGOS_SELF_TYPE_NORMAL SBBacklightController* _LOGOS_SELF_CONST __unused self, SEL __unused _cmd, float arg1, double arg2, long long arg3, BOOL arg4, id arg5) {
-		if(enabled && (arg1==0 && [self screenIsOn]) ) {
+		if(enabled && 
+			(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) && 
+			(arg1==0 && [self screenIsOn])) {
+
 			Log([NSString stringWithFormat:@"_animateBacklightToFactor()  Backlight:%f Duration:%f Source:%llx Silently:%i", arg1, arg2, arg3, arg4]);
-			arg2 = speed;
+			arg2 = totalTime;
 
 
 			
@@ -292,11 +344,43 @@ static void (*_logos_orig$_ungrouped$SpringBoard$applicationDidFinishLaunching$)
 
 
 
+static void reloadPrefs() {
+	Log(@"reloadPrefs()");
+	CFPreferencesAppSynchronize((CFStringRef)kIdentifier);
+	NSDictionary *prefs = nil;
+	if ([NSHomeDirectory() isEqualToString:@"/var/mobile"]) {
+		CFArrayRef keyList = CFPreferencesCopyKeyList((CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		if (keyList != nil) {
+			prefs = (NSDictionary *)CFBridgingRelease(CFPreferencesCopyMultiple(keyList, (CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost));
+			if (prefs == nil)
+				prefs = [NSDictionary dictionary];
+			CFRelease(keyList);
+		}
+	} else {
+		prefs = [NSDictionary dictionaryWithContentsOfFile:kSettingsPath];
+	}
 
-static __attribute__((constructor)) void _logosLocalCtor_babeaf76(int __unused argc, char __unused **argv, char __unused **envp) {
-	
-	
+
+	enabled = [prefs objectForKey:@"kEnabled"] ? [(NSNumber *)[prefs objectForKey:@"kEnabled"] boolValue] : enabled;
+	disableInLPM = [prefs objectForKey:@"kLPM"] ? [(NSNumber *)[prefs objectForKey:@"kLPM"] boolValue] : disableInLPM;
+	glowEffect = [prefs objectForKey:@"kGlow"] ? [(NSNumber *)[prefs objectForKey:@"kGlow"] boolValue] : glowEffect;
+	smoothAnim = [prefs objectForKey:@"kSmooth"] ? [(NSNumber *)[prefs objectForKey:@"kSmooth"] boolValue] : smoothAnim;
+
+	animTime1 = [prefs objectForKey:@"kAnim1"] ? [(NSNumber *)[prefs objectForKey:@"kAnim1"] floatValue] : animTime1;
+	pauseTime1 = [prefs objectForKey:@"kPause1"] ? [(NSNumber *)[prefs objectForKey:@"kPause1"] floatValue] : pauseTime1;
+	animTime2 = [prefs objectForKey:@"kAnim2"] ? [(NSNumber *)[prefs objectForKey:@"kAnim2"] floatValue] : animTime2;
+	animTime3 = [prefs objectForKey:@"kAnim3"] ? [(NSNumber *)[prefs objectForKey:@"kAnim3"] floatValue] : animTime3;
+	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
+
+	lineThickness = [prefs objectForKey:@"kLine"] ? [(NSNumber *)[prefs objectForKey:@"kLine"] intValue] : lineThickness;
+	dotSize = [prefs objectForKey:@"kDot"] ? [(NSNumber *)[prefs objectForKey:@"kDot"] intValue] : dotSize;
+}
+
+static __attribute__((constructor)) void _logosLocalCtor_f15d1557(int __unused argc, char __unused **argv, char __unused **envp) {
+	reloadPrefs();
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)reloadPrefs, kSettingsChangedNotification, NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
 }
 static __attribute__((constructor)) void _logosLocalInit() {
 {Class _logos_class$_ungrouped$SpringBoard = objc_getClass("SpringBoard"); { MSHookMessageEx(_logos_class$_ungrouped$SpringBoard, @selector(applicationDidFinishLaunching:), (IMP)&_logos_method$_ungrouped$SpringBoard$applicationDidFinishLaunching$, (IMP*)&_logos_orig$_ungrouped$SpringBoard$applicationDidFinishLaunching$);}Class _logos_class$_ungrouped$SBBacklightController = objc_getClass("SBBacklightController"); { MSHookMessageEx(_logos_class$_ungrouped$SBBacklightController, @selector(_animateBacklightToFactor:duration:source:silently:completion:), (IMP)&_logos_method$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$, (IMP*)&_logos_orig$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$);}} }
-#line 274 "Tweak.x"
+#line 358 "Tweak.x"

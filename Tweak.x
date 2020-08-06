@@ -10,7 +10,7 @@
 
 bool enabled = true;
 bool disableInLPM = false;
-bool glowEffect = false;
+bool glowEffect = true;
 bool smoothAnim = false;
 
 int lineThickness = 4;
@@ -284,7 +284,7 @@ static TVLock *__strong tvLock;
 
 		//[TVLock sharedInstance];
 		tvLock = [[TVLock alloc] init];
-		ShowAlert(@"TVLock started", @"Title");
+		//ShowAlert(@"TVLock started", @"Title");
 
 		springboardReady = true;
 	}

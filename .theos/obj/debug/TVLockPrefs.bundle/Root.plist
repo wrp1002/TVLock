@@ -9,8 +9,6 @@
 		<string>PSGroupCell</string>
 		<key>label</key>
 		<string>Options</string>
-		<key>footerText</key>
-		<string>Make animations ease in and out.</string>
 	</dict>
 	<dict>
 		<key>cell</key>
@@ -48,7 +46,7 @@
 		<key>key</key>
 		<string>kGlow</string>
 		<key>default</key>
-		<false/>
+		<true/>
 		<key>defaults</key>
 		<string>com.wrp1002.tvlock</string>
 		<key>PostNotification</key>
@@ -58,7 +56,7 @@
 		<key>cell</key>
 		<string>PSSwitchCell</string>
 		<key>label</key>
-		<string>Use smooth animation</string>
+		<string>Use Smooth Animation</string>
 		<key>key</key>
 		<string>kSmooth</string>
 		<key>default</key>

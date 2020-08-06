@@ -11,7 +11,7 @@
 
 bool enabled = true;
 bool disableInLPM = false;
-bool glowEffect = false;
+bool glowEffect = true;
 bool smoothAnim = false;
 
 int lineThickness = 4;
@@ -212,7 +212,6 @@ static TVLock *__strong tvLock;
 						options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
 						animations:^{
 							
-							
 							mainView.transform = CGAffineTransformScale(imageView.transform, dotSize / (float)mainView.bounds.size.width, dotSize / (float)mainView.bounds.size.height);
 							subView.layer.cornerRadius = 300;
 						} 
@@ -228,10 +227,6 @@ static TVLock *__strong tvLock;
 					delay:0.0f
                     options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
 					animations:^{
-
-						
-						
-						
 
 						
 						mainView.transform = CGAffineTransformScale(imageView.transform, 1, lineThickness / (float)mainView.bounds.size.height);
@@ -304,7 +299,7 @@ static TVLock *__strong tvLock;
 @class SpringBoard; @class SBBacklightController; 
 static void (*_logos_orig$_ungrouped$SpringBoard$applicationDidFinishLaunching$)(_LOGOS_SELF_TYPE_NORMAL SpringBoard* _LOGOS_SELF_CONST, SEL, id); static void _logos_method$_ungrouped$SpringBoard$applicationDidFinishLaunching$(_LOGOS_SELF_TYPE_NORMAL SpringBoard* _LOGOS_SELF_CONST, SEL, id); static void (*_logos_orig$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$)(_LOGOS_SELF_TYPE_NORMAL SBBacklightController* _LOGOS_SELF_CONST, SEL, float, double, long long, BOOL, id); static void _logos_method$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$(_LOGOS_SELF_TYPE_NORMAL SBBacklightController* _LOGOS_SELF_CONST, SEL, float, double, long long, BOOL, id); 
 
-#line 282 "Tweak.x"
+#line 277 "Tweak.x"
 
 
 	
@@ -315,7 +310,7 @@ static void (*_logos_orig$_ungrouped$SpringBoard$applicationDidFinishLaunching$)
 
 		
 		tvLock = [[TVLock alloc] init];
-		ShowAlert(@"TVLock started", @"Title");
+		
 
 		springboardReady = true;
 	}
@@ -376,11 +371,11 @@ static void reloadPrefs() {
 	dotSize = [prefs objectForKey:@"kDot"] ? [(NSNumber *)[prefs objectForKey:@"kDot"] intValue] : dotSize;
 }
 
-static __attribute__((constructor)) void _logosLocalCtor_f15d1557(int __unused argc, char __unused **argv, char __unused **envp) {
+static __attribute__((constructor)) void _logosLocalCtor_ffe16864(int __unused argc, char __unused **argv, char __unused **envp) {
 	reloadPrefs();
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)reloadPrefs, kSettingsChangedNotification, NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
 }
 static __attribute__((constructor)) void _logosLocalInit() {
 {Class _logos_class$_ungrouped$SpringBoard = objc_getClass("SpringBoard"); { MSHookMessageEx(_logos_class$_ungrouped$SpringBoard, @selector(applicationDidFinishLaunching:), (IMP)&_logos_method$_ungrouped$SpringBoard$applicationDidFinishLaunching$, (IMP*)&_logos_orig$_ungrouped$SpringBoard$applicationDidFinishLaunching$);}Class _logos_class$_ungrouped$SBBacklightController = objc_getClass("SBBacklightController"); { MSHookMessageEx(_logos_class$_ungrouped$SBBacklightController, @selector(_animateBacklightToFactor:duration:source:silently:completion:), (IMP)&_logos_method$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$, (IMP*)&_logos_orig$_ungrouped$SBBacklightController$_animateBacklightToFactor$duration$source$silently$completion$);}} }
-#line 358 "Tweak.x"
+#line 353 "Tweak.x"

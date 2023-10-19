@@ -7,10 +7,10 @@ HBPreferences *preferences;
 
 //	=========================== Preference vars ===========================
 
-bool enabled = true;
-bool disableInLPM = false;
-bool glowEffect = true;
-bool smoothAnim = false;
+BOOL enabled = true;
+BOOL disableInLPM = false;
+BOOL glowEffect = true;
+BOOL smoothAnim = false;
 
 NSInteger lineThickness = 4;
 NSInteger dotSize = 3;

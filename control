@@ -1,5 +1,5 @@
 Package: com.wrp1002.tvlock
-Name: TVLock13
+Name: TVLock
 Version: 1.0.1
 Architecture: iphoneos-arm
 Description: Awesome TV turning off animation for locking!

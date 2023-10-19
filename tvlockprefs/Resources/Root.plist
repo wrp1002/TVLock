@@ -28,7 +28,7 @@
 		<key>cell</key>
 		<string>PSSwitchCell</string>
 		<key>label</key>
-		<string>Disable in LPM</string>
+		<string>Disable in Low Power Mode</string>
 		<key>key</key>
 		<string>kLPM</string>
 		<key>default</key>
@@ -131,7 +131,7 @@
 		<key>cell</key>
 		<string>PSSliderCell</string>
 		<key>label</key>
-        <string>Modifier</string>
+		<string>Modifier</string>
 		<key>key</key>
 		<string>kAnim1</string>
 		<key>min</key>
@@ -239,20 +239,11 @@
 		<key>cell</key>
 			<string>PSButtonCell</string>
 			<key>label</key>
-			<string>Reset all settings</string>
+			<string>Reset all settings (no respring)</string>
 			<key>action</key>
 			<string>Reset</string>
 			<key>isDestructive</key>
 			<true/>
-			<key>confirmation</key>
-			<dict>
-				<key>prompt</key>
-				<string>Are you sure? This will respring your device.</string>
-				<key>title</key>
-				<string>Reset!</string>
-				<key>cancelTitle</key>
-				<string>Cancel</string>
-			</dict>
 	</dict>
 
 	<dict>
@@ -269,7 +260,7 @@
 		<key>action</key>
 		<string>OpenEmail</string>
 		<key>icon</key>
-        <string>email.png</string>
+		<string>email.png</string>
 	</dict>
 	<dict>
 		<key>cell</key>
@@ -279,7 +270,7 @@
 		<key>action</key>
 		<string>OpenReddit</string>
 		<key>icon</key>
-        <string>reddit.png</string>
+		<string>reddit.png</string>
 	</dict>
 	<dict>
 		<key>cell</key>
@@ -289,7 +280,7 @@
 		<key>action</key>
 		<string>OpenGithub</string>
 		<key>icon</key>
-        <string>github.png</string>
+		<string>github.png</string>
 	</dict>
 	<dict>
 		<key>cell</key>
@@ -299,7 +290,7 @@
 		<key>action</key>
 		<string>OpenPaypal</string>
 		<key>icon</key>
-        <string>paypal.png</string>
+		<string>paypal.png</string>
 	</dict>
 
 	</array>

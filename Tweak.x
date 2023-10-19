@@ -1,10 +1,9 @@
+#import <UIKit/UIKit.h>
 #import <Cephei/HBPreferences.h>
 
-#define kIdentifier @"com.wrp1002.tvlock"
-#define kSettingsChangedNotification (CFStringRef)@"com.wrp1002.tvlock/ReloadPrefs"
-#define kSettingsPath @"/var/mobile/Library/Preferences/com.wrp1002.tvlock.plist"
+//	=============================== Globals ===============================
 
-
+HBPreferences *preferences;
 
 //	=========================== Preference vars ===========================
 
@@ -13,14 +12,14 @@ bool disableInLPM = false;
 bool glowEffect = true;
 bool smoothAnim = false;
 
-int lineThickness = 4;
-int dotSize = 3;
+NSInteger lineThickness = 4;
+NSInteger dotSize = 3;
 
-float animTime1 = 0.15;
-float pauseTime1 = 0.05;
-float animTime2 = 0.15;
-float animTime3 = 0.40;
-float totalTime = 1.0;
+double animTime1 = 0.15;
+double pauseTime1 = 0.05;
+double animTime2 = 0.15;
+double animTime3 = 0.40;
+double totalTime = 1.0;
 
 
 
@@ -30,37 +29,52 @@ NSString *LogTweakName = @"TVLock13";
 bool springboardReady = false;
 
 UIWindow* GetKeyWindow() {
-    UIWindow        *foundWindow = nil;
-    NSArray         *windows = [[UIApplication sharedApplication]windows];
-    for (UIWindow   *window in windows) {
-        if (window.isKeyWindow) {
-            foundWindow = window;
-            break;
-        }
-    }
-    return foundWindow;
+	if (@available(iOS 13, *)) {
+		NSSet *connectedScenes = [UIApplication sharedApplication].connectedScenes;
+		for (UIScene *scene in connectedScenes) {
+			if ([scene isKindOfClass:[UIWindowScene class]]) {
+				UIWindowScene *windowScene = (UIWindowScene *)scene;
+				for (UIWindow *window in windowScene.windows) {
+					if (window.isKeyWindow) {
+						return window;
+					}
+				}
+			}
+		}
+	} else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+		NSArray		 *windows = [[UIApplication sharedApplication] windows];
+#pragma clang diagnostic pop
+		for (UIWindow   *window in windows) {
+			if (window.isKeyWindow) {
+				return window;
+			}
+		}
+	}
+	return nil;
 }
 
 //	Shows an alert box. Used for debugging 
 void ShowAlert(NSString *msg, NSString *title) {
 	UIAlertController * alert = [UIAlertController
-                                 alertControllerWithTitle:title
-                                 message:msg
-                                 preferredStyle:UIAlertControllerStyleAlert];
+								 alertControllerWithTitle:title
+								 message:msg
+								 preferredStyle:UIAlertControllerStyleAlert];
 
-    //Add Buttons
-    UIAlertAction* dismissButton = [UIAlertAction
-                                actionWithTitle:@"Cool!"
-                                style:UIAlertActionStyleDefault
-                                handler:^(UIAlertAction * action) {
-                                    //Handle dismiss button action here
+	//Add Buttons
+	UIAlertAction* dismissButton = [UIAlertAction
+								actionWithTitle:@"Cool!"
+								style:UIAlertActionStyleDefault
+								handler:^(UIAlertAction * action) {
+									//Handle dismiss button action here
 									
-                                }];
+								}];
 
-    //Add your buttons to alert controller
-    [alert addAction:dismissButton];
+	//Add your buttons to alert controller
+	[alert addAction:dismissButton];
 
-    [GetKeyWindow().rootViewController presentViewController:alert animated:YES completion:nil];
+	[GetKeyWindow().rootViewController presentViewController:alert animated:YES completion:nil];
 }
 
 //	Show log with tweak name as prefix for easy grep
@@ -224,7 +238,7 @@ static TVLock *__strong tvLock;
 			void (^anim1)(void) = ^{
 				[UIView animateWithDuration:animTime1
 					delay:0.0f
-                    options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
+					options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
 					animations:^{
 
 						//	First part of animation
@@ -312,41 +326,29 @@ static TVLock *__strong tvLock;
 %end
 
 
-//	Called whenever any preferences are changed to update variables
-static void reloadPrefs() {
-	Log(@"reloadPrefs()");
-	CFPreferencesAppSynchronize((CFStringRef)kIdentifier);
-	NSDictionary *prefs = nil;
-	if ([NSHomeDirectory() isEqualToString:@"/var/mobile"]) {
-		CFArrayRef keyList = CFPreferencesCopyKeyList((CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		if (keyList != nil) {
-			prefs = (NSDictionary *)CFBridgingRelease(CFPreferencesCopyMultiple(keyList, (CFStringRef)kIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost));
-			if (prefs == nil)
-				prefs = [NSDictionary dictionary];
-			CFRelease(keyList);
-		}
-	} else {
-		prefs = [NSDictionary dictionaryWithContentsOfFile:kSettingsPath];
-	}
 
-
-	enabled = [prefs objectForKey:@"kEnabled"] ? [(NSNumber *)[prefs objectForKey:@"kEnabled"] boolValue] : enabled;
-	disableInLPM = [prefs objectForKey:@"kLPM"] ? [(NSNumber *)[prefs objectForKey:@"kLPM"] boolValue] : disableInLPM;
-	glowEffect = [prefs objectForKey:@"kGlow"] ? [(NSNumber *)[prefs objectForKey:@"kGlow"] boolValue] : glowEffect;
-	smoothAnim = [prefs objectForKey:@"kSmooth"] ? [(NSNumber *)[prefs objectForKey:@"kSmooth"] boolValue] : smoothAnim;
-
-	animTime1 = [prefs objectForKey:@"kAnim1"] ? [(NSNumber *)[prefs objectForKey:@"kAnim1"] floatValue] : animTime1;
-	pauseTime1 = [prefs objectForKey:@"kPause1"] ? [(NSNumber *)[prefs objectForKey:@"kPause1"] floatValue] : pauseTime1;
-	animTime2 = [prefs objectForKey:@"kAnim2"] ? [(NSNumber *)[prefs objectForKey:@"kAnim2"] floatValue] : animTime2;
-	animTime3 = [prefs objectForKey:@"kAnim3"] ? [(NSNumber *)[prefs objectForKey:@"kAnim3"] floatValue] : animTime3;
+static void prefsDidUpdate() {
+	Log(@"prefsDidUpdate()");
 	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
-
-	lineThickness = [prefs objectForKey:@"kLine"] ? [(NSNumber *)[prefs objectForKey:@"kLine"] intValue] : lineThickness;
-	dotSize = [prefs objectForKey:@"kDot"] ? [(NSNumber *)[prefs objectForKey:@"kDot"] intValue] : dotSize;
 }
 
 %ctor {
-	reloadPrefs();
-	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)reloadPrefs, kSettingsChangedNotification, NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
+	preferences = [[HBPreferences alloc] initWithIdentifier:@"com.wrp1002.tvlock"];
+
+    [preferences registerBool:&enabled default:enabled forKey:@"kEnabled"];
+    [preferences registerBool:&disableInLPM default:disableInLPM forKey:@"kLPM"];
+    [preferences registerBool:&glowEffect default:glowEffect forKey:@"kGlow"];
+    [preferences registerBool:&smoothAnim default:smoothAnim forKey:@"kSmooth"];
+
+    [preferences registerDouble:&animTime1 default:animTime1 forKey:@"kAnim1"];
+    [preferences registerDouble:&pauseTime1 default:pauseTime1 forKey:@"kPause1"];
+    [preferences registerDouble:&animTime2 default:animTime2 forKey:@"kAnim2"];
+    [preferences registerDouble:&animTime3 default:animTime3 forKey:@"kAnim3"];
+
+    [preferences registerInteger:&lineThickness default:lineThickness forKey:@"kLine"];
+    [preferences registerInteger:&dotSize default:dotSize forKey:@"kDot"];
+
+    [preferences registerPreferenceChangeBlock:^{
+        prefsDidUpdate();
+    }];
 }

@@ -10,17 +10,9 @@
 	return _specifiers;
 }
 
--(void)Respring {
-    pid_t pid;
-	int status;
-	const char* args[] = {"killall", "-9", "SpringBoard", NULL};
-	posix_spawn(&pid, "/usr/bin/killall", NULL, NULL, (char* const*)args, NULL);
-	waitpid(pid, &status, WEXITED);//wait untill the process completes (only if you need to do that)
-}
-
 -(void)OpenGithub {
 	UIApplication *application = [UIApplication sharedApplication];
-	NSURL *URL = [NSURL URLWithString:@"https://github.com/wrp1002/TVLock"];
+	NSURL *URL = [NSURL URLWithString:@"https://github.com/p0358/TVLock"];
 	[application openURL:URL options:@{} completionHandler:^(BOOL success) {
 		if (success) {
 			NSLog(@"Opened url");
@@ -60,11 +52,7 @@
 
 -(void)Reset {
 	[[[HBPreferences alloc] initWithIdentifier: @"com.wrp1002.tvlock"] removeAllObjects];
-
-	NSFileManager *fm = [NSFileManager defaultManager];
-	[fm removeItemAtPath: @"/var/mobile/Library/Preferences/com.wrp1002.tvlock.plist" error: nil];
-
-	[self Respring];
+	[self reloadSpecifiers];
 }
 
 @end

@@ -1,3 +1,8 @@
+#THEOS_PACKAGE_SCHEME=rootless
+
+include $(THEOS)/makefiles/common.mk
+
+
 ifeq ($(THEOS_PACKAGE_SCHEME),rootless)
 	ARCHS = arm64 arm64e
 	TARGET = iphone:clang:15.5:15.0
@@ -6,7 +11,7 @@ else
 	TARGET = iphone:clang:14.2:8.0
 endif
 
-include $(THEOS)/makefiles/common.mk
+SDKVERSION = 13.3
 
 BUNDLE_NAME = TVLockPrefs
 

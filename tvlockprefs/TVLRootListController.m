@@ -12,7 +12,7 @@
 
 -(void)OpenGithub {
 	UIApplication *application = [UIApplication sharedApplication];
-	NSURL *URL = [NSURL URLWithString:@"https://github.com/p0358/TVLock"];
+	NSURL *URL = [NSURL URLWithString:@"https://github.com/wrp1002/TVLock"];
 	[application openURL:URL options:@{} completionHandler:^(BOOL success) {
 		if (success) {
 			NSLog(@"Opened url");
@@ -51,8 +51,9 @@
 }
 
 -(void)Reset {
-	[[[HBPreferences alloc] initWithIdentifier: @"com.wrp1002.tvlock"] removeAllObjects];
-	[self reloadSpecifiers];
+	HBPreferences *preferences = [[HBPreferences alloc] initWithIdentifier: @"com.wrp1002.tvlock"];
+	[preferences removeAllObjects];
+	[HBRespringController respring];
 }
 
 @end

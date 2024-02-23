@@ -1,5 +1,7 @@
 #import <UIKit/UIKit.h>
 #import <Cephei/HBPreferences.h>
+#import <objc/runtime.h>
+#import <UIKit/UIWindow+Private.h>
 
 //	=============================== Globals ===============================
 
@@ -20,13 +22,13 @@ double pauseTime1 = 0.05;
 double animTime2 = 0.15;
 double animTime3 = 0.40;
 double totalTime = 1.0;
+double lockTime = 0.5;
 
 
 
 //	=========================== Debugging stuff ===========================
 
 NSString *LogTweakName = @"TVLock13";
-bool springboardReady = false;
 
 UIWindow* GetKeyWindow() {
 	if (@available(iOS 13, *)) {
@@ -55,7 +57,7 @@ UIWindow* GetKeyWindow() {
 	return nil;
 }
 
-//	Shows an alert box. Used for debugging 
+//	Shows an alert box. Used for debugging
 void ShowAlert(NSString *msg, NSString *title) {
 	UIAlertController * alert = [UIAlertController
 								 alertControllerWithTitle:title
@@ -68,7 +70,7 @@ void ShowAlert(NSString *msg, NSString *title) {
 								style:UIAlertActionStyleDefault
 								handler:^(UIAlertAction * action) {
 									//Handle dismiss button action here
-									
+
 								}];
 
 	//Add your buttons to alert controller
@@ -98,7 +100,7 @@ extern UIImage* _UICreateScreenUIImage();
 
 
 @interface SBBacklightController : NSObject
-	@property (nonatomic,readonly) BOOL screenIsOn; 
+	@property (nonatomic,readonly) BOOL screenIsOn;
 	@property (nonatomic,readonly) BOOL screenIsDim;
 @end
 
@@ -106,6 +108,7 @@ extern UIImage* _UICreateScreenUIImage();
 
 @interface UIWindow ()
 - (void)_setSecure:(BOOL)arg1;
+- (BOOL)_shouldCreateContextAsSecure;
 @end
 
 
@@ -143,8 +146,9 @@ static TVLock *__strong tvLock;
 				[springboardWindow setUserInteractionEnabled:NO];
 				[springboardWindow setAlpha:1.0];
 				springboardWindow.backgroundColor = [UIColor blackColor];
+				springboardWindow.windowScene = [UIApplication sharedApplication].keyWindow.windowScene;
 				//[springboardWindow makeKeyAndVisible];
-				
+
 				mainView = [[UIView alloc] initWithFrame:springboardWindow.bounds];
 				[mainView setAlpha:1.0f];
 				mainView.backgroundColor = [UIColor clearColor];
@@ -171,7 +175,7 @@ static TVLock *__strong tvLock;
 				whiteOverlay.backgroundColor = [UIColor whiteColor];
 				whiteOverlay.alpha = 0.0f;
 				[imageView addSubview:whiteOverlay];
-				
+
 			} @catch (NSException *e) {
 				LogException(e);
 			}
@@ -180,17 +184,15 @@ static TVLock *__strong tvLock;
 	}
 
 	-(void)showLockAnimation:(float)totalTime {
-		Log(@"showLockAnimation()");
-		
 		@try {
 			[self reset];
-			
-			//	This is stupid and took too long to figure out. _UICreateScreenUIImage returns 
+
+			//	This is stupid and took too long to figure out. _UICreateScreenUIImage returns
 			//	a UIImage but doesn't give ownership to ARC, so it is done manually.
 			CFTypeRef ref = (__bridge CFTypeRef)_UICreateScreenUIImage();
 			UIImage *img = (__bridge_transfer UIImage*)ref;
 			imageView.image = img;
-			
+
 			if (glowEffect) {
 				mainView.layer.shadowOpacity = 200.0f;
 				mainView.layer.shadowRadius = 200.0f;
@@ -211,7 +213,7 @@ static TVLock *__strong tvLock;
 						animations:^{
 							//	Third part of animation
 							whiteOverlay.backgroundColor = [UIColor blackColor];
-						} 
+						}
 						completion:^(BOOL finished) {
 							[self reset];
 						}
@@ -227,7 +229,7 @@ static TVLock *__strong tvLock;
 							//	Second part of animation
 							mainView.transform = CGAffineTransformScale(imageView.transform, dotSize / (float)mainView.bounds.size.width, dotSize / (float)mainView.bounds.size.height);
 							subView.layer.cornerRadius = 300;
-						} 
+						}
 						completion:^(BOOL finished) {
 							anim3();
 						}
@@ -250,7 +252,7 @@ static TVLock *__strong tvLock;
 					}
 				];
 			};
-			
+
 			//	Play first animation, which will also play the second one
 			anim1();
 
@@ -258,7 +260,7 @@ static TVLock *__strong tvLock;
 		@catch (NSException *e) {
 			LogException(e);
 		}
-		
+
 	}
 
 	-(void)reset {
@@ -288,6 +290,7 @@ static TVLock *__strong tvLock;
 
 //	=========================== Hooks ===========================
 
+
 %hook SpringBoard
 
 	//	Called when springboard is finished launching
@@ -295,12 +298,7 @@ static TVLock *__strong tvLock;
 		%orig;
 
 		Log(@"============== TVLock started ==============");
-
-		//[TVLock sharedInstance];
 		tvLock = [[TVLock alloc] init];
-		//ShowAlert(@"TVLock started", @"Title");
-
-		springboardReady = true;
 	}
 
 %end
@@ -309,8 +307,8 @@ static TVLock *__strong tvLock;
 
 %hook SBBacklightController
 	-(void)_animateBacklightToFactor:(float)arg1 duration:(double)arg2 source:(long long)arg3 silently:(BOOL)arg4 completion:(id)arg5 {
-		if(enabled && 
-			(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) && 
+		if(enabled &&
+			(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) &&
 			(arg1==0 && [self screenIsOn])) {
 
 			Log([NSString stringWithFormat:@"_animateBacklightToFactor()  Backlight:%f Duration:%f Source:%llx Silently:%i", arg1, arg2, arg3, arg4]);
@@ -323,6 +321,24 @@ static TVLock *__strong tvLock;
 
 		%orig(arg1, arg2, arg3, arg4, arg5);
 	}
+	-(void)setBacklightState:(long long)arg1 source:(long long)arg2 animated:(BOOL)arg3 completion:(/*^block*/id)arg4 {
+
+		if  (enabled &&
+			(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) &&
+			(arg1 == 3 && [self screenIsOn])) {
+
+			[tvLock showLockAnimation:totalTime];
+
+			// Wait for tv animation to complete and then lock screen
+			double delayInSeconds = totalTime - lockTime;
+			dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+			dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+				%orig;
+			});
+		}
+		else
+			%orig;
+	}
 %end
 
 
@@ -333,6 +349,8 @@ static void prefsDidUpdate() {
 }
 
 %ctor {
+	Log(@"============== TVLock init ==============");
+
 	preferences = [[HBPreferences alloc] initWithIdentifier:@"com.wrp1002.tvlock"];
 
     [preferences registerBool:&enabled default:enabled forKey:@"kEnabled"];

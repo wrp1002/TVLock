@@ -28,72 +28,6 @@ double lockTime = 0.5;
 
 //	=========================== Debugging stuff ===========================
 
-NSString *LogTweakName = @"TVLock13";
-
-UIWindow* GetKeyWindow() {
-	if (@available(iOS 13, *)) {
-		NSSet *connectedScenes = [UIApplication sharedApplication].connectedScenes;
-		for (UIScene *scene in connectedScenes) {
-			if ([scene isKindOfClass:[UIWindowScene class]]) {
-				UIWindowScene *windowScene = (UIWindowScene *)scene;
-				for (UIWindow *window in windowScene.windows) {
-					if (window.isKeyWindow) {
-						return window;
-					}
-				}
-			}
-		}
-	} else {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-		NSArray		 *windows = [[UIApplication sharedApplication] windows];
-#pragma clang diagnostic pop
-		for (UIWindow   *window in windows) {
-			if (window.isKeyWindow) {
-				return window;
-			}
-		}
-	}
-	return nil;
-}
-
-//	Shows an alert box. Used for debugging
-void ShowAlert(NSString *msg, NSString *title) {
-	UIAlertController * alert = [UIAlertController
-								 alertControllerWithTitle:title
-								 message:msg
-								 preferredStyle:UIAlertControllerStyleAlert];
-
-	//Add Buttons
-	UIAlertAction* dismissButton = [UIAlertAction
-								actionWithTitle:@"Cool!"
-								style:UIAlertActionStyleDefault
-								handler:^(UIAlertAction * action) {
-									//Handle dismiss button action here
-
-								}];
-
-	//Add your buttons to alert controller
-	[alert addAction:dismissButton];
-
-	[GetKeyWindow().rootViewController presentViewController:alert animated:YES completion:nil];
-}
-
-//	Show log with tweak name as prefix for easy grep
-void Log(NSString *msg) {
-	NSLog(@"%@: %@", LogTweakName, msg);
-}
-
-//	Log exception info
-void LogException(NSException *e) {
-	NSLog(@"%@: NSException caught", LogTweakName);
-	NSLog(@"%@: Name:%@", LogTweakName, e.name);
-	NSLog(@"%@: Reason:%@", LogTweakName, e.reason);
-	//ShowAlert(@"TVLock Crash Avoided!", @"Alert");
-}
-
-
-
 //	=========================== Classes stuff ===========================
 
 extern UIImage* _UICreateScreenUIImage();
@@ -134,7 +68,6 @@ static TVLock *__strong tvLock;
 
 @implementation TVLock
 	-(id)init {
-		Log(@"init()");
 		self = [super init];
 
 		if(self != nil) {
@@ -177,7 +110,6 @@ static TVLock *__strong tvLock;
 				[imageView addSubview:whiteOverlay];
 
 			} @catch (NSException *e) {
-				LogException(e);
 			}
 		}
 		return self;
@@ -258,14 +190,11 @@ static TVLock *__strong tvLock;
 
 		}
 		@catch (NSException *e) {
-			LogException(e);
 		}
 
 	}
 
 	-(void)reset {
-		Log(@"reset()");
-
 		mainView.alpha = 1.0f;
 		mainView.frame = springboardWindow.bounds;
 		mainView.transform = CGAffineTransformIdentity;
@@ -297,7 +226,6 @@ static TVLock *__strong tvLock;
 	-(void)applicationDidFinishLaunching:(id)application {
 		%orig;
 
-		Log(@"============== TVLock started ==============");
 		tvLock = [[TVLock alloc] init];
 	}
 
@@ -311,7 +239,6 @@ static TVLock *__strong tvLock;
 			(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) &&
 			(arg1==0 && [self screenIsOn])) {
 
-			Log([NSString stringWithFormat:@"_animateBacklightToFactor()  Backlight:%f Duration:%f Source:%llx Silently:%i", arg1, arg2, arg3, arg4]);
 			arg2 = totalTime;
 
 
@@ -344,13 +271,10 @@ static TVLock *__strong tvLock;
 
 
 static void prefsDidUpdate() {
-	Log(@"prefsDidUpdate()");
 	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
 }
 
 %ctor {
-	Log(@"============== TVLock init ==============");
-
 	preferences = [[HBPreferences alloc] initWithIdentifier:@"com.wrp1002.tvlock"];
 
     [preferences registerBool:&enabled default:enabled forKey:@"kEnabled"];

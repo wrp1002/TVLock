@@ -33,7 +33,7 @@ jobs:
           path: theos/sdks
 
       - name: Install dependencies
-        run: brew install make xz ldid
+        run: brew install make xz ldid || true
 
       - name: Build package (rootless)
         run: THEOS=theos gmake clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless

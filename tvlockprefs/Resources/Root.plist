@@ -235,7 +235,7 @@
 		<key>cell</key>
 		<string>PSGroupCell</string>
 		<key>footerText</key>
-		<string>Respringing is needed for changes to take effect!</string>
+		<string>Respringing is not needed for changes to take effect!</string>
 	</dict>
 	<dict>
 		<key>cell</key>

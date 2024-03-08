@@ -42,7 +42,7 @@
 
 -(void)OpenEmail {
 	UIApplication *application = [UIApplication sharedApplication];
-	NSURL *URL = [NSURL URLWithString:@"mailto:wes.hamster@gmail.com?subject=TVLock13"];
+	NSURL *URL = [NSURL URLWithString:@"mailto:wes.hamster@gmail.com?subject=TVLock"];
 	[application openURL:URL options:@{} completionHandler:^(BOOL success) {
 		if (success) {
 			NSLog(@"Opened url");

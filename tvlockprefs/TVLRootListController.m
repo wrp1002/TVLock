@@ -56,4 +56,8 @@
 	[HBRespringController respring];
 }
 
+-(void)Respring {
+	[HBRespringController respring];
+}
+
 @end

@@ -51,9 +51,10 @@
 }
 
 -(void)Reset {
-	HBPreferences *preferences = [[HBPreferences alloc] initWithIdentifier: @"com.wrp1002.tvlock"];
-	[preferences removeAllObjects];
-	[HBRespringController respring];
+	HBPreferences *prefs = [[HBPreferences alloc] initWithIdentifier:BUNDLE];
+	[prefs removeAllObjects];
+	[self reloadSpecifiers];
+	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR(BUNDLE_NOTIFY), nil, nil, true);
 }
 
 -(void)Respring {

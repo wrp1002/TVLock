@@ -22,7 +22,7 @@ double pauseTime1 = 0.05;
 double animTime2 = 0.15;
 double animTime3 = 0.40;
 double totalTime = 1.0;
-double lockTime = 0.5;
+double lockTime = 0.25;
 
 
 
@@ -242,30 +242,25 @@ static TVLock *__strong tvLock;
 
 			arg2 = totalTime;
 
-			[tvLock showLockAnimation:arg2 completion:^{
-				// No need to run %orig here
-			}];
+			//[tvLock showLockAnimation:arg2];
 		}
 
 		%orig(arg1, arg2, arg3, arg4, arg5);
 	}
-	-(void)setBacklightState:(long long)arg1 source:(long long)arg2 animated:(BOOL)arg3 completion:(/*^block*/id)arg4 {
-
-		if  (enabled &&
-			(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) &&
-			(arg1 == 3 && [self screenIsOn])) {
-
-
-			[tvLock showLockAnimation:totalTime completion:^{
-				// Execute the %orig block
-				%orig;
-			}];
-		}
-		else
-			%orig;
-	}
 %end
 
+
+%hook SBSleepWakeHardwareButtonInteraction
+	-(void)_performSleep {
+		// Wait for tv animation to complete and then lock screen
+		double delayInSeconds = totalTime - lockTime;
+		dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+		dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+			%orig;
+		});
+		[tvLock showLockAnimation:totalTime completion:^{}];
+	}
+%end
 
 
 static void prefsDidUpdate() {

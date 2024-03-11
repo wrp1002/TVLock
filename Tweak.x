@@ -55,7 +55,7 @@ extern UIImage* _UICreateScreenUIImage();
 }
 	-(id)init;
 	//-(UIImage*)screenshot;
-	-(void)showLockAnimation:(float)arg1;
+	-(void)showLockAnimation:(float)arg1 completion:(void (^)(void))completionBlock;
 	-(void)reset;
 @end
 
@@ -115,7 +115,7 @@ static TVLock *__strong tvLock;
 		return self;
 	}
 
-	-(void)showLockAnimation:(float)totalTime {
+	-(void)showLockAnimation:(float)totalTime completion:(void (^)(void))completionBlock {
 		@try {
 			[self reset];
 
@@ -163,6 +163,7 @@ static TVLock *__strong tvLock;
 							subView.layer.cornerRadius = 300;
 						}
 						completion:^(BOOL finished) {
+							completionBlock();
 							anim3();
 						}
 				];
@@ -241,9 +242,9 @@ static TVLock *__strong tvLock;
 
 			arg2 = totalTime;
 
-
-			//for (int i = 0; i < 20; i++)	// For stress testing memory leak (all fixed now)
-			[tvLock showLockAnimation:arg2];
+			[tvLock showLockAnimation:arg2 completion:^{
+				// No need to run %orig here
+			}];
 		}
 
 		%orig(arg1, arg2, arg3, arg4, arg5);
@@ -254,14 +255,11 @@ static TVLock *__strong tvLock;
 			(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) &&
 			(arg1 == 3 && [self screenIsOn])) {
 
-			[tvLock showLockAnimation:totalTime];
 
-			// Wait for tv animation to complete and then lock screen
-			double delayInSeconds = totalTime - lockTime;
-			dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
-			dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+			[tvLock showLockAnimation:totalTime completion:^{
+				// Execute the %orig block
 				%orig;
-			});
+			}];
 		}
 		else
 			%orig;

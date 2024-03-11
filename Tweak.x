@@ -55,7 +55,7 @@ extern UIImage* _UICreateScreenUIImage();
 }
 	-(id)init;
 	//-(UIImage*)screenshot;
-	-(void)showLockAnimation:(float)arg1 completion:(void (^)(void))completionBlock;
+	-(void)showLockAnimation:(float)arg1;
 	-(void)reset;
 @end
 
@@ -115,7 +115,7 @@ static TVLock *__strong tvLock;
 		return self;
 	}
 
-	-(void)showLockAnimation:(float)totalTime completion:(void (^)(void))completionBlock {
+	-(void)showLockAnimation:(float)totalTime {
 		@try {
 			[self reset];
 
@@ -163,7 +163,6 @@ static TVLock *__strong tvLock;
 							subView.layer.cornerRadius = 300;
 						}
 						completion:^(BOOL finished) {
-							completionBlock();
 							anim3();
 						}
 				];
@@ -249,16 +248,17 @@ static TVLock *__strong tvLock;
 	}
 %end
 
-
+// Temporary fix to avoid safe mode issues. Animation only triggers when lock button is used
 %hook SBSleepWakeHardwareButtonInteraction
 	-(void)_performSleep {
 		// Wait for tv animation to complete and then lock screen
+		[tvLock showLockAnimation:totalTime];
+
 		double delayInSeconds = totalTime - lockTime;
 		dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
 		dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
 			%orig;
 		});
-		[tvLock showLockAnimation:totalTime completion:^{}];
 	}
 %end
 

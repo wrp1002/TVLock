@@ -39,6 +39,9 @@ extern UIImage* _UICreateScreenUIImage();
 @end
 
 
+@interface SBSleepWakeHardwareButtonInteraction : NSObject
+	-(void)_playLockSound;
+@end
 
 @interface UIWindow ()
 - (void)_setSecure:(BOOL)arg1;
@@ -219,55 +222,86 @@ static TVLock *__strong tvLock;
 
 //	=========================== Hooks ===========================
 
-
-%hook SpringBoard
-
-	//	Called when springboard is finished launching
-	-(void)applicationDidFinishLaunching:(id)application {
-		%orig;
-
-		tvLock = [[TVLock alloc] init];
-	}
-
-%end
-
-
-
-%hook SBBacklightController
-	-(void)_animateBacklightToFactor:(float)arg1 duration:(double)arg2 source:(long long)arg3 silently:(BOOL)arg4 completion:(id)arg5 {
-		if(enabled &&
-			(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) &&
-			(arg1==0 && [self screenIsOn])) {
-
-			arg2 = totalTime;
-
-			//[tvLock showLockAnimation:arg2];
-		}
-
-		%orig(arg1, arg2, arg3, arg4, arg5);
-	}
-%end
-
-// Temporary fix to avoid safe mode issues. Animation only triggers when lock button is used
-%hook SBSleepWakeHardwareButtonInteraction
-	-(void)_performSleep {
-		// Wait for tv animation to complete and then lock screen
-		[tvLock showLockAnimation:totalTime];
-
-		double delayInSeconds = totalTime - lockTime;
-		dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
-		dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+%group allVersionHooks
+	%hook SpringBoard
+		//	Called when springboard is finished launching
+		-(void)applicationDidFinishLaunching:(id)application {
 			%orig;
-		});
-	}
+
+			tvLock = [[TVLock alloc] init];
+		}
+	%end
 %end
 
+
+%group under16hooks
+	%hook SBBacklightController
+		-(void)_animateBacklightToFactor:(float)arg1 duration:(double)arg2 source:(long long)arg3 silently:(BOOL)arg4 completion:(id)arg5 {
+			if(enabled &&
+				(!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled])) &&
+				(arg1==0 && [self screenIsOn])) {
+
+				arg2 = totalTime;
+
+				[tvLock showLockAnimation:arg2];
+			}
+
+			%orig(arg1, arg2, arg3, arg4, arg5);
+		}
+	%end
+%end
+
+
+%group iOS16hooks
+	// Temporary fix to avoid safe mode issues. Animation only triggers when lock button is used
+	%hook SBSleepWakeHardwareButtonInteraction
+		-(void)_performSleep {
+			[tvLock showLockAnimation:totalTime];
+
+			// Play start sound at beginning of animation
+			// otherwise it'll play very late
+			[self _playLockSound];
+
+			// Wait for animation to complete and then lock screen
+			double delayInSeconds = totalTime - lockTime;
+			dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+			dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+				%orig;
+			});
+		}
+	%end
+
+	// Also trigger animation for auto lock
+	%hook SBIdleTimerPolicyAggregator
+		-(void)idleTimerDidExpire:(id)arg1 {
+			[tvLock showLockAnimation:totalTime];
+
+			// Wait for animation to complete and then lock screen
+			double delayInSeconds = totalTime - lockTime;
+			dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^(void){
+				%orig;
+			});
+
+		}
+	%end
+%end
 
 static void prefsDidUpdate() {
 	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
 }
 
 %ctor {
+	%init(allVersionHooks);
+
+	NSOperatingSystemVersion systemVersion = [NSProcessInfo processInfo].operatingSystemVersion;
+	if (systemVersion.majorVersion >= 16) {
+		%init(iOS16hooks);
+	}
+	else {
+		%init(under16hooks);
+	}
+
+
 	preferences = [[HBPreferences alloc] initWithIdentifier:@"com.wrp1002.tvlock"];
 
     [preferences registerBool:&enabled default:enabled forKey:@"kEnabled"];

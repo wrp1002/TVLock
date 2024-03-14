@@ -182,7 +182,10 @@ static TVLock *__strong tvLock;
 						options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
 						animations:^{
 							//	Second part of animation
-							mainView.transform = CGAffineTransformConcat(springboardWindow.transform, CGAffineTransformScale(CGAffineTransformIdentity, dotSize / (float)mainView.bounds.size.width, dotSize / (float)mainView.bounds.size.height));
+							if (landscape)
+								mainView.transform = CGAffineTransformConcat(springboardWindow.transform, CGAffineTransformScale(CGAffineTransformIdentity, dotSize / (float)mainView.bounds.size.height, dotSize / (float)mainView.bounds.size.width));
+							else
+								mainView.transform = CGAffineTransformConcat(springboardWindow.transform, CGAffineTransformScale(CGAffineTransformIdentity, dotSize / (float)mainView.bounds.size.width, dotSize / (float)mainView.bounds.size.height));
 							subView.layer.cornerRadius = 300;
 						}
 						completion:^(BOOL finished) {

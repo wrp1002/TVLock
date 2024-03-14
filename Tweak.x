@@ -55,6 +55,7 @@ extern UIImage* _UICreateScreenUIImage();
 	UIView *subView;
 	UIImageView *imageView;
 	UIView *whiteOverlay;
+	BOOL landscape;
 }
 	-(id)init;
 	//-(UIImage*)screenshot;
@@ -75,6 +76,8 @@ static TVLock *__strong tvLock;
 
 		if(self != nil) {
 			@try {
+				landscape = false;
+
 				springboardWindow = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 				springboardWindow.windowLevel = UIWindowLevelAlert + 2;
 				[springboardWindow setHidden:YES];
@@ -83,7 +86,6 @@ static TVLock *__strong tvLock;
 				[springboardWindow setAlpha:1.0];
 				springboardWindow.backgroundColor = [UIColor blackColor];
 				springboardWindow.windowScene = [UIApplication sharedApplication].keyWindow.windowScene;
-				//[springboardWindow makeKeyAndVisible];
 
 				mainView = [[UIView alloc] initWithFrame:springboardWindow.bounds];
 				[mainView setAlpha:1.0f];
@@ -111,6 +113,13 @@ static TVLock *__strong tvLock;
 				whiteOverlay.backgroundColor = [UIColor whiteColor];
 				whiteOverlay.alpha = 0.0f;
 				[imageView addSubview:whiteOverlay];
+
+				[[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
+				[[NSNotificationCenter defaultCenter]
+					addObserver:self selector:@selector(orientationChanged:)
+					name:UIDeviceOrientationDidChangeNotification
+					object:[UIDevice currentDevice]
+				];
 
 			} @catch (NSException *e) {
 			}
@@ -162,7 +171,7 @@ static TVLock *__strong tvLock;
 						options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
 						animations:^{
 							//	Second part of animation
-							mainView.transform = CGAffineTransformScale(imageView.transform, dotSize / (float)mainView.bounds.size.width, dotSize / (float)mainView.bounds.size.height);
+							mainView.transform = CGAffineTransformConcat(springboardWindow.transform, CGAffineTransformScale(CGAffineTransformIdentity, dotSize / (float)mainView.bounds.size.width, dotSize / (float)mainView.bounds.size.height));
 							subView.layer.cornerRadius = 300;
 						}
 						completion:^(BOOL finished) {
@@ -179,7 +188,7 @@ static TVLock *__strong tvLock;
 					animations:^{
 
 						//	First part of animation
-						mainView.transform = CGAffineTransformScale(imageView.transform, 1, lineThickness / (float)mainView.bounds.size.height);
+						mainView.transform = CGAffineTransformConcat(springboardWindow.transform, CGAffineTransformScale(CGAffineTransformIdentity, 1, lineThickness / (float)mainView.bounds.size.height));
 						whiteOverlay.alpha = 1.0f;
 
 					} completion:^(BOOL finished) {
@@ -197,24 +206,60 @@ static TVLock *__strong tvLock;
 
 	}
 
-	-(void)reset {
+	- (void)orientationChanged:(NSNotification *)note {
+		NSLog(@"TVLock: updating orientation");
+
+		UIDevice *device = note.object;
+		UIDeviceOrientation orientation = device.orientation;
+		CGRect screenBounds = [UIScreen mainScreen].fixedCoordinateSpace.bounds;
+
+		NSLog([NSString stringWithFormat:@"TVLock %f x %f", CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds)]);
+
+		switch (orientation) {
+			case UIInterfaceOrientationPortrait:
+			case UIInterfaceOrientationPortraitUpsideDown:
+				self->landscape = false;
+				self->springboardWindow.transform = CGAffineTransformIdentity;
+				self->imageView.transform = CGAffineTransformIdentity;
+				self->springboardWindow.frame = CGRectMake(0, 0, CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds));
+				break;
+			case UIInterfaceOrientationLandscapeLeft:
+			case UIInterfaceOrientationLandscapeRight:
+				self->landscape = true;
+				self->springboardWindow.transform = CGAffineTransformMakeRotation(M_PI_2);
+				self->imageView.transform = CGAffineTransformMakeRotation(M_PI);
+				self->springboardWindow.frame = CGRectMake(0, 0, CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds));
+				break;
+			default:
+				break;
+		}
+		[self reset];
+	}
+
+	- (void)reset {
 		mainView.alpha = 1.0f;
 		mainView.frame = springboardWindow.bounds;
-		mainView.transform = CGAffineTransformIdentity;
+		mainView.transform = springboardWindow.transform;
 
 		subView.layer.cornerRadius = 0;
 
-		imageView.frame = springboardWindow.bounds;
-		imageView.transform = CGAffineTransformIdentity;
+		if (landscape)
+			imageView.frame = CGRectMake(0, 0, CGRectGetHeight(springboardWindow.bounds), CGRectGetWidth(springboardWindow.bounds));
+		else
+			imageView.frame = springboardWindow.bounds;
 		imageView.image = nil;
 
 		whiteOverlay.alpha = 0.0f;
 		whiteOverlay.backgroundColor = [UIColor whiteColor];
-		whiteOverlay.frame = springboardWindow.bounds;
-		whiteOverlay.transform = CGAffineTransformIdentity;
+		if (landscape)
+			whiteOverlay.frame = CGRectMake(0, 0, CGRectGetHeight(springboardWindow.bounds), CGRectGetWidth(springboardWindow.bounds));
+		else
+			whiteOverlay.frame = springboardWindow.bounds;
+		whiteOverlay.transform = springboardWindow.transform;
 
 		[springboardWindow setHidden:YES];
 	}
+
 
 @end
 
@@ -304,20 +349,20 @@ static void prefsDidUpdate() {
 
 	preferences = [[HBPreferences alloc] initWithIdentifier:@"com.wrp1002.tvlock"];
 
-    [preferences registerBool:&enabled default:enabled forKey:@"kEnabled"];
-    [preferences registerBool:&disableInLPM default:disableInLPM forKey:@"kLPM"];
-    [preferences registerBool:&glowEffect default:glowEffect forKey:@"kGlow"];
-    [preferences registerBool:&smoothAnim default:smoothAnim forKey:@"kSmooth"];
+	[preferences registerBool:&enabled default:enabled forKey:@"kEnabled"];
+	[preferences registerBool:&disableInLPM default:disableInLPM forKey:@"kLPM"];
+	[preferences registerBool:&glowEffect default:glowEffect forKey:@"kGlow"];
+	[preferences registerBool:&smoothAnim default:smoothAnim forKey:@"kSmooth"];
 
-    [preferences registerDouble:&animTime1 default:animTime1 forKey:@"kAnim1"];
-    [preferences registerDouble:&pauseTime1 default:pauseTime1 forKey:@"kPause1"];
-    [preferences registerDouble:&animTime2 default:animTime2 forKey:@"kAnim2"];
-    [preferences registerDouble:&animTime3 default:animTime3 forKey:@"kAnim3"];
+	[preferences registerDouble:&animTime1 default:animTime1 forKey:@"kAnim1"];
+	[preferences registerDouble:&pauseTime1 default:pauseTime1 forKey:@"kPause1"];
+	[preferences registerDouble:&animTime2 default:animTime2 forKey:@"kAnim2"];
+	[preferences registerDouble:&animTime3 default:animTime3 forKey:@"kAnim3"];
 
-    [preferences registerInteger:&lineThickness default:lineThickness forKey:@"kLine"];
-    [preferences registerInteger:&dotSize default:dotSize forKey:@"kDot"];
+	[preferences registerInteger:&lineThickness default:lineThickness forKey:@"kLine"];
+	[preferences registerInteger:&dotSize default:dotSize forKey:@"kDot"];
 
-    [preferences registerPreferenceChangeBlock:^{
-        prefsDidUpdate();
-    }];
+	[preferences registerPreferenceChangeBlock:^{
+		prefsDidUpdate();
+	}];
 }

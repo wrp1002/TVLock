@@ -13,6 +13,7 @@ BOOL enabled = true;
 BOOL disableInLPM = false;
 BOOL glowEffect = true;
 BOOL smoothAnim = false;
+BOOL landscapeEnabled = false;
 
 NSInteger lineThickness = 4;
 NSInteger dotSize = 3;
@@ -56,10 +57,13 @@ extern UIImage* _UICreateScreenUIImage();
 	UIImageView *imageView;
 	UIView *whiteOverlay;
 	BOOL landscape;
+	BOOL animationInProgress;
 }
 	-(id)init;
-	//-(UIImage*)screenshot;
+	-(UIImage*)getScreenshot;
 	-(void)showLockAnimation:(float)arg1;
+	-(void)orientationChanged:(NSNotification *)note;
+	-(void)resetToPortrait;
 	-(void)reset;
 @end
 
@@ -77,6 +81,7 @@ static TVLock *__strong tvLock;
 		if(self != nil) {
 			@try {
 				landscape = false;
+				animationInProgress = false;
 
 				springboardWindow = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 				springboardWindow.windowLevel = UIWindowLevelAlert + 2;
@@ -127,15 +132,20 @@ static TVLock *__strong tvLock;
 		return self;
 	}
 
+	-(UIImage*)getScreenshot {
+		// This is stupid and took too long to figure out. _UICreateScreenUIImage returns
+		// a UIImage but doesn't give ownership to ARC, so it is done manually.
+		CFTypeRef ref = (__bridge CFTypeRef)_UICreateScreenUIImage();
+		UIImage *img = (__bridge_transfer UIImage*)ref;
+		return img;
+	}
+
 	-(void)showLockAnimation:(float)totalTime {
 		@try {
 			[self reset];
+			animationInProgress = true;
 
-			//	This is stupid and took too long to figure out. _UICreateScreenUIImage returns
-			//	a UIImage but doesn't give ownership to ARC, so it is done manually.
-			CFTypeRef ref = (__bridge CFTypeRef)_UICreateScreenUIImage();
-			UIImage *img = (__bridge_transfer UIImage*)ref;
-			imageView.image = img;
+			imageView.image = [self getScreenshot];
 
 			if (glowEffect) {
 				mainView.layer.shadowOpacity = 200.0f;
@@ -160,6 +170,7 @@ static TVLock *__strong tvLock;
 						}
 						completion:^(BOOL finished) {
 							[self reset];
+							animationInProgress = false;
 						}
 				];
 			};
@@ -206,8 +217,9 @@ static TVLock *__strong tvLock;
 
 	}
 
-	- (void)orientationChanged:(NSNotification *)note {
-		NSLog(@"TVLock: updating orientation");
+	-(void)orientationChanged:(NSNotification *)note {
+		if (!landscapeEnabled || animationInProgress)
+			return;
 
 		UIDevice *device = note.object;
 		UIDeviceOrientation orientation = device.orientation;
@@ -222,6 +234,7 @@ static TVLock *__strong tvLock;
 				self->springboardWindow.transform = CGAffineTransformIdentity;
 				self->imageView.transform = CGAffineTransformIdentity;
 				self->springboardWindow.frame = CGRectMake(0, 0, CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds));
+				[self reset];
 				break;
 			case UIInterfaceOrientationLandscapeLeft:
 			case UIInterfaceOrientationLandscapeRight:
@@ -229,10 +242,20 @@ static TVLock *__strong tvLock;
 				self->springboardWindow.transform = CGAffineTransformMakeRotation(M_PI_2);
 				self->imageView.transform = CGAffineTransformMakeRotation(M_PI);
 				self->springboardWindow.frame = CGRectMake(0, 0, CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds));
+				[self reset];
 				break;
 			default:
 				break;
 		}
+	}
+
+	- (void)resetToPortrait {
+		CGRect screenBounds = [UIScreen mainScreen].fixedCoordinateSpace.bounds;
+
+		self->landscape = false;
+		self->springboardWindow.transform = CGAffineTransformIdentity;
+		self->springboardWindow.frame = CGRectMake(0, 0, CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds));
+
 		[self reset];
 	}
 
@@ -333,6 +356,8 @@ static TVLock *__strong tvLock;
 
 static void prefsDidUpdate() {
 	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
+	if (!landscapeEnabled)
+		[tvLock resetToPortrait];
 }
 
 %ctor {
@@ -353,6 +378,7 @@ static void prefsDidUpdate() {
 	[preferences registerBool:&disableInLPM default:disableInLPM forKey:@"kLPM"];
 	[preferences registerBool:&glowEffect default:glowEffect forKey:@"kGlow"];
 	[preferences registerBool:&smoothAnim default:smoothAnim forKey:@"kSmooth"];
+	[preferences registerBool:&landscapeEnabled default:smoothAnim forKey:@"kLandscape"];
 
 	[preferences registerDouble:&animTime1 default:animTime1 forKey:@"kAnim1"];
 	[preferences registerDouble:&pauseTime1 default:pauseTime1 forKey:@"kPause1"];

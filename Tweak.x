@@ -327,31 +327,42 @@ static TVLock *__strong tvLock;
 	// Temporary fix to avoid safe mode issues. Animation only triggers when lock button is used
 	%hook SBSleepWakeHardwareButtonInteraction
 		-(void)_performSleep {
-			[tvLock showLockAnimation:totalTime];
+			if (enabled && (!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled]))) {
 
-			// Play start sound at beginning of animation
-			// otherwise it'll play very late
-			[self _playLockSound];
+				[tvLock showLockAnimation:totalTime];
 
-			// Wait for animation to complete and then lock screen
-			double delayInSeconds = totalTime - lockTime;
-			dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
-			dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+				// Play start sound at beginning of animation
+				// otherwise it'll play very late
+				[self _playLockSound];
+
+				// Wait for animation to complete and then lock screen
+				double delayInSeconds = totalTime - lockTime;
+				dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+				dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+					%orig;
+				});
+			}
+			else {
 				%orig;
-			});
+			}
 		}
 	%end
 
 	// Also trigger animation for auto lock
 	%hook SBIdleTimerPolicyAggregator
 		-(void)idleTimerDidExpire:(id)arg1 {
-			[tvLock showLockAnimation:totalTime];
+			if (enabled && (!disableInLPM || (![[NSProcessInfo processInfo] isLowPowerModeEnabled]))) {
+				[tvLock showLockAnimation:totalTime];
 
-			// Wait for animation to complete and then lock screen
-			double delayInSeconds = totalTime - lockTime;
-			dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^(void){
+				// Wait for animation to complete and then lock screen
+				double delayInSeconds = totalTime - lockTime;
+				dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^(void){
+					%orig;
+				});
+			}
+			else {
 				%orig;
-			});
+			}
 
 		}
 	%end

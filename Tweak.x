@@ -7,8 +7,8 @@
 
 HBPreferences *preferences;
 
-// For @available to work
-int __isOSVersionAtLeast(int major, int minor, int patch) { NSOperatingSystemVersion version; version.majorVersion = major; version.minorVersion = minor; version.patchVersion = patch; return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]; }
+// For @available to work. needs commented out for github to compile
+//int __isOSVersionAtLeast(int major, int minor, int patch) { NSOperatingSystemVersion version; version.majorVersion = major; version.minorVersion = minor; version.patchVersion = patch; return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]; }
 
 //	=========================== Preference vars ===========================
 
@@ -235,8 +235,6 @@ static TVLock *__strong tvLock;
 		UIDevice *device = note.object;
 		UIDeviceOrientation orientation = device.orientation;
 		CGRect screenBounds = [UIScreen mainScreen].fixedCoordinateSpace.bounds;
-
-		NSLog([NSString stringWithFormat:@"TVLock %f x %f", CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds)]);
 
 		switch (orientation) {
 			case UIInterfaceOrientationPortrait:

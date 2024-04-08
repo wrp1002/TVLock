@@ -7,6 +7,9 @@
 
 HBPreferences *preferences;
 
+// For @available to work
+int __isOSVersionAtLeast(int major, int minor, int patch) { NSOperatingSystemVersion version; version.majorVersion = major; version.minorVersion = minor; version.patchVersion = patch; return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]; }
+
 //	=========================== Preference vars ===========================
 
 BOOL enabled = true;
@@ -90,7 +93,12 @@ static TVLock *__strong tvLock;
 				[springboardWindow setUserInteractionEnabled:NO];
 				[springboardWindow setAlpha:1.0];
 				springboardWindow.backgroundColor = [UIColor blackColor];
-				springboardWindow.windowScene = [UIApplication sharedApplication].keyWindow.windowScene;
+				if (@available(iOS 13.0, *)) {
+					springboardWindow.windowScene = [UIApplication sharedApplication].keyWindow.windowScene;
+				}
+				else {
+					springboardWindow.screen = [UIScreen mainScreen];
+				}
 
 				mainView = [[UIView alloc] initWithFrame:springboardWindow.bounds];
 				[mainView setAlpha:1.0f];

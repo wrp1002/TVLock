@@ -1,6 +1,7 @@
 THEOS_DEVICE_IP = 10.0.0.130
 GO_EASY_ON_ME = 1
 #THEOS_PACKAGE_SCHEME=rootless
+# GET OLDABI!!!
 
 
 PACKAGE_VERSION = $(THEOS_PACKAGE_BASE_VERSION)
@@ -22,9 +23,8 @@ SDKVERSION = 16.5
 
 TWEAK_NAME = TVLock
 
-$(TWEAK_NAME)_FILES = Tweak.x
+$(TWEAK_NAME)_FILES = Tweak.x TVLock.x
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc
-$(TWEAK_NAME)_EXTRA_FRAMEWORKS += Cephei
 
 include $(THEOS)/makefiles/common.mk
 include $(THEOS_MAKE_PATH)/tweak.mk

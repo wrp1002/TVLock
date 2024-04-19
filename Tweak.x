@@ -1,300 +1,87 @@
 #import <UIKit/UIKit.h>
-#import <Cephei/HBPreferences.h>
 #import <objc/runtime.h>
 #import <UIKit/UIWindow+Private.h>
+#import "Tweak.h"
+#import "TVLock.h"
+#import "Globals.h"
 
 //	=============================== Globals ===============================
 
-HBPreferences *preferences;
+#define TWEAK_NAME @"TVLock"
+#define BUNDLE [NSString stringWithFormat:@"com.wrp1002.%@", [TWEAK_NAME lowercaseString]]
+#define BUNDLE_NOTIFY (CFStringRef)[NSString stringWithFormat:@"%@/ReloadPrefs", BUNDLE]
+
+static TVLock *__strong tvLock;
+double totalTime = 1.0;
+double lockTime = 0.25;
 
 // For @available to work. needs commented out for github to compile
 //int __isOSVersionAtLeast(int major, int minor, int patch) { NSOperatingSystemVersion version; version.majorVersion = major; version.minorVersion = minor; version.patchVersion = patch; return [[NSProcessInfo processInfo] isOperatingSystemAtLeastVersion:version]; }
 
+
 //	=========================== Preference vars ===========================
 
-BOOL enabled = true;
-BOOL disableInLPM = false;
-BOOL glowEffect = true;
-BOOL smoothAnim = false;
-BOOL landscapeEnabled = false;
+BOOL enabled;
+BOOL disableInLPM;
+BOOL glowEffect;
+BOOL smoothAnim;
+BOOL landscapeEnabled;
 
-NSInteger lineThickness = 4;
-NSInteger dotSize = 3;
+NSInteger lineThickness;
+NSInteger dotSize;
 
-double animTime1 = 0.15;
-double pauseTime1 = 0.05;
-double animTime2 = 0.15;
-double animTime3 = 0.40;
-double totalTime = 1.0;
-double lockTime = 0.25;
+double animTime1;
+double pauseTime1;
+double animTime2;
+double animTime3;
+double totalTime;
+double lockTime;
 
+NSUserDefaults *prefs = nil;
 
-
-//	=========================== Debugging stuff ===========================
-
-//	=========================== Classes stuff ===========================
-
-extern UIImage* _UICreateScreenUIImage();
-
-
-@interface SBBacklightController : NSObject
-	@property (nonatomic,readonly) BOOL screenIsOn;
-	@property (nonatomic,readonly) BOOL screenIsDim;
-@end
-
-
-@interface SBSleepWakeHardwareButtonInteraction : NSObject
-	-(void)_playLockSound;
-@end
-
-@interface UIWindow ()
-- (void)_setSecure:(BOOL)arg1;
-- (BOOL)_shouldCreateContextAsSecure;
-@end
-
-
-@interface TVLock:NSObject {
-	UIWindow *springboardWindow;
-	UIView *mainView;
-	UIView *subView;
-	UIImageView *imageView;
-	UIView *whiteOverlay;
-	BOOL landscape;
-	BOOL animationInProgress;
+static void InitPrefs(void) {
+	if (!prefs) {
+		NSDictionary *defaultPrefs = @{
+			@"kEnabled": @YES,
+			@"kLPM": @NO,
+			@"kGlow": @YES,
+			@"kSmooth": @NO,
+			@"kLandscape": @NO,
+			@"kLine": @4,
+			@"kDot": @3,
+			@"kAnim1": @0.15,
+			@"kPause1": @0.05,
+			@"kAnim2": @0.15,
+			@"kAnim3": @0.40,
+		};
+		prefs = [[NSUserDefaults alloc] initWithSuiteName:BUNDLE];
+		[prefs registerDefaults:defaultPrefs];
+	}
 }
-	-(id)init;
-	-(UIImage*)getScreenshot;
-	-(void)showLockAnimation:(float)arg1;
-	-(void)orientationChanged:(NSNotification *)note;
-	-(void)resetToPortrait;
-	-(void)reset;
-@end
 
+static void UpdatePrefs() {
+	enabled = [prefs boolForKey: @"kEnabled"];
+	disableInLPM = [prefs boolForKey: @"kLPM"];
+	glowEffect = [prefs boolForKey: @"kGlow"];
+	smoothAnim = [prefs boolForKey: @"kSmooth"];
+	landscapeEnabled = [prefs boolForKey: @"kLandscape"];
 
+	animTime1 = [prefs floatForKey:@"kAnim1"];
+	pauseTime1 = [prefs floatForKey:@"kPause1"];
+	animTime2 = [prefs floatForKey:@"kAnim2"];
+	animTime3 = [prefs floatForKey:@"kAnim3"];
 
+	lineThickness = [prefs integerForKey: @"kLine"];
+	dotSize = [prefs integerForKey: @"kDot"];
 
-static TVLock *__strong tvLock;
+	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
+	if (!landscapeEnabled)
+		[tvLock resetToPortrait];
+}
 
-
-
-@implementation TVLock
-	-(id)init {
-		self = [super init];
-
-		if(self != nil) {
-			@try {
-				landscape = false;
-				animationInProgress = false;
-
-				springboardWindow = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-				springboardWindow.windowLevel = UIWindowLevelAlert + 2;
-				[springboardWindow setHidden:YES];
-				[springboardWindow _setSecure:YES];
-				[springboardWindow setUserInteractionEnabled:NO];
-				[springboardWindow setAlpha:1.0];
-				springboardWindow.backgroundColor = [UIColor blackColor];
-				if (@available(iOS 13.0, *)) {
-					springboardWindow.windowScene = [UIApplication sharedApplication].keyWindow.windowScene;
-				}
-				else {
-					springboardWindow.screen = [UIScreen mainScreen];
-				}
-
-				mainView = [[UIView alloc] initWithFrame:springboardWindow.bounds];
-				[mainView setAlpha:1.0f];
-				mainView.backgroundColor = [UIColor clearColor];
-				mainView.layer.shadowColor = [UIColor whiteColor].CGColor;
-				mainView.layer.shadowOffset = CGSizeZero;
-				mainView.layer.shadowOpacity = 200.0f;
-				mainView.layer.shadowRadius = 200.0f;
-				mainView.layer.shouldRasterize = true;
-				[springboardWindow addSubview:mainView];
-
-				subView = [[UIView alloc] initWithFrame:springboardWindow.bounds];
-				[subView setAlpha:1.0f];
-				subView.backgroundColor = [UIColor blackColor];
-				subView.layer.masksToBounds = YES;
-				[mainView addSubview:subView];
-
-				imageView = [[UIImageView alloc] initWithFrame:springboardWindow.bounds];
-				imageView.frame = springboardWindow.bounds;
-				imageView.contentMode = UIViewContentModeScaleAspectFill;
-				[subView addSubview:imageView];
-
-				whiteOverlay = [[UIView alloc] initWithFrame:springboardWindow.bounds];
-				whiteOverlay.frame = springboardWindow.bounds;
-				whiteOverlay.backgroundColor = [UIColor whiteColor];
-				whiteOverlay.alpha = 0.0f;
-				[imageView addSubview:whiteOverlay];
-
-				[[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
-				[[NSNotificationCenter defaultCenter]
-					addObserver:self selector:@selector(orientationChanged:)
-					name:UIDeviceOrientationDidChangeNotification
-					object:[UIDevice currentDevice]
-				];
-
-			} @catch (NSException *e) {
-			}
-		}
-		return self;
-	}
-
-	-(UIImage*)getScreenshot {
-		// This is stupid and took too long to figure out. _UICreateScreenUIImage returns
-		// a UIImage but doesn't give ownership to ARC, so it is done manually.
-		CFTypeRef ref = (__bridge CFTypeRef)_UICreateScreenUIImage();
-		UIImage *img = (__bridge_transfer UIImage*)ref;
-		return img;
-	}
-
-	-(void)showLockAnimation:(float)totalTime {
-		@try {
-			[self reset];
-			animationInProgress = true;
-
-			imageView.image = [self getScreenshot];
-
-			if (glowEffect) {
-				mainView.layer.shadowOpacity = 200.0f;
-				mainView.layer.shadowRadius = 200.0f;
-			}
-			else {
-				mainView.layer.shadowOpacity = 0.0f;
-				mainView.layer.shadowRadius = 0.0f;
-			}
-
-			//	Show animation window
-			[springboardWindow setHidden:NO];
-
-			//	Setup third animation
-			void (^anim3)(void) = ^{
-				[UIView animateWithDuration:animTime3
-						delay:0.0f
-						options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
-						animations:^{
-							//	Third part of animation
-							whiteOverlay.backgroundColor = [UIColor blackColor];
-						}
-						completion:^(BOOL finished) {
-							[self reset];
-							animationInProgress = false;
-						}
-				];
-			};
-
-			//	Setup second animation
-			void (^anim2)(void) = ^{
-				[UIView animateWithDuration:animTime2
-						delay:pauseTime1
-						options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
-						animations:^{
-							//	Second part of animation
-							if (landscape)
-								mainView.transform = CGAffineTransformConcat(springboardWindow.transform, CGAffineTransformScale(CGAffineTransformIdentity, dotSize / (float)mainView.bounds.size.height, dotSize / (float)mainView.bounds.size.width));
-							else
-								mainView.transform = CGAffineTransformConcat(springboardWindow.transform, CGAffineTransformScale(CGAffineTransformIdentity, dotSize / (float)mainView.bounds.size.width, dotSize / (float)mainView.bounds.size.height));
-							subView.layer.cornerRadius = 300;
-						}
-						completion:^(BOOL finished) {
-							anim3();
-						}
-				];
-			};
-
-			//	Setup first animation
-			void (^anim1)(void) = ^{
-				[UIView animateWithDuration:animTime1
-					delay:0.0f
-					options:(smoothAnim ? UIViewAnimationOptionCurveEaseInOut : UIViewAnimationOptionCurveLinear)
-					animations:^{
-
-						//	First part of animation
-						mainView.transform = CGAffineTransformConcat(springboardWindow.transform, CGAffineTransformScale(CGAffineTransformIdentity, 1, lineThickness / (float)mainView.bounds.size.height));
-						whiteOverlay.alpha = 1.0f;
-
-					} completion:^(BOOL finished) {
-						anim2();
-					}
-				];
-			};
-
-			//	Play first animation, which will also play the second one
-			anim1();
-
-		}
-		@catch (NSException *e) {
-		}
-
-	}
-
-	-(void)orientationChanged:(NSNotification *)note {
-		if (!landscapeEnabled || animationInProgress)
-			return;
-
-		UIDevice *device = note.object;
-		UIDeviceOrientation orientation = device.orientation;
-		CGRect screenBounds = [UIScreen mainScreen].fixedCoordinateSpace.bounds;
-
-		switch (orientation) {
-			case UIInterfaceOrientationPortrait:
-			case UIInterfaceOrientationPortraitUpsideDown:
-				self->landscape = false;
-				self->springboardWindow.transform = CGAffineTransformIdentity;
-				self->imageView.transform = CGAffineTransformIdentity;
-				self->springboardWindow.frame = CGRectMake(0, 0, CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds));
-				[self reset];
-				break;
-			case UIInterfaceOrientationLandscapeLeft:
-			case UIInterfaceOrientationLandscapeRight:
-				self->landscape = true;
-				self->springboardWindow.transform = CGAffineTransformMakeRotation(M_PI_2);
-				self->imageView.transform = CGAffineTransformMakeRotation(M_PI);
-				self->springboardWindow.frame = CGRectMake(0, 0, CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds));
-				[self reset];
-				break;
-			default:
-				break;
-		}
-	}
-
-	- (void)resetToPortrait {
-		CGRect screenBounds = [UIScreen mainScreen].fixedCoordinateSpace.bounds;
-
-		self->landscape = false;
-		self->springboardWindow.transform = CGAffineTransformIdentity;
-		self->springboardWindow.frame = CGRectMake(0, 0, CGRectGetWidth(screenBounds), CGRectGetHeight(screenBounds));
-
-		[self reset];
-	}
-
-	- (void)reset {
-		mainView.alpha = 1.0f;
-		mainView.frame = springboardWindow.bounds;
-		mainView.transform = springboardWindow.transform;
-
-		subView.layer.cornerRadius = 0;
-
-		if (landscape)
-			imageView.frame = CGRectMake(0, 0, CGRectGetHeight(springboardWindow.bounds), CGRectGetWidth(springboardWindow.bounds));
-		else
-			imageView.frame = springboardWindow.bounds;
-		imageView.image = nil;
-
-		whiteOverlay.alpha = 0.0f;
-		whiteOverlay.backgroundColor = [UIColor whiteColor];
-		if (landscape)
-			whiteOverlay.frame = CGRectMake(0, 0, CGRectGetHeight(springboardWindow.bounds), CGRectGetWidth(springboardWindow.bounds));
-		else
-			whiteOverlay.frame = springboardWindow.bounds;
-		whiteOverlay.transform = springboardWindow.transform;
-
-		[springboardWindow setHidden:YES];
-	}
-
-
-@end
-
+static void PrefsChangeCallback(CFNotificationCenterRef center, void *observer, CFNotificationName name, const void *object, CFDictionaryRef userInfo) {
+	UpdatePrefs();
+}
 
 
 //	=========================== Hooks ===========================
@@ -374,13 +161,23 @@ static TVLock *__strong tvLock;
 	%end
 %end
 
-static void prefsDidUpdate() {
-	totalTime = animTime1 + pauseTime1 + animTime2 + animTime3;
-	if (!landscapeEnabled)
-		[tvLock resetToPortrait];
-}
+
+
+//	=========================== Constructor ===========================
 
 %ctor {
+	InitPrefs();
+	UpdatePrefs();
+
+	CFNotificationCenterAddObserver(
+		CFNotificationCenterGetDarwinNotifyCenter(),
+		NULL,
+		&PrefsChangeCallback,
+		BUNDLE_NOTIFY,
+		NULL,
+		0
+	);
+
 	%init(allVersionHooks);
 
 	NSOperatingSystemVersion systemVersion = [NSProcessInfo processInfo].operatingSystemVersion;
@@ -390,25 +187,4 @@ static void prefsDidUpdate() {
 	else {
 		%init(under16hooks);
 	}
-
-
-	preferences = [[HBPreferences alloc] initWithIdentifier:@"com.wrp1002.tvlock"];
-
-	[preferences registerBool:&enabled default:enabled forKey:@"kEnabled"];
-	[preferences registerBool:&disableInLPM default:disableInLPM forKey:@"kLPM"];
-	[preferences registerBool:&glowEffect default:glowEffect forKey:@"kGlow"];
-	[preferences registerBool:&smoothAnim default:smoothAnim forKey:@"kSmooth"];
-	[preferences registerBool:&landscapeEnabled default:smoothAnim forKey:@"kLandscape"];
-
-	[preferences registerDouble:&animTime1 default:animTime1 forKey:@"kAnim1"];
-	[preferences registerDouble:&pauseTime1 default:pauseTime1 forKey:@"kPause1"];
-	[preferences registerDouble:&animTime2 default:animTime2 forKey:@"kAnim2"];
-	[preferences registerDouble:&animTime3 default:animTime3 forKey:@"kAnim3"];
-
-	[preferences registerInteger:&lineThickness default:lineThickness forKey:@"kLine"];
-	[preferences registerInteger:&dotSize default:dotSize forKey:@"kDot"];
-
-	[preferences registerPreferenceChangeBlock:^{
-		prefsDidUpdate();
-	}];
 }
